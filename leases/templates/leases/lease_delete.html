@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dzēst līgumu - {{ lease.unit.unit_number }} - {{ lease.unit.property.address }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'leases:lease_list' company.slug %}">Īres līgumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'leases:lease_detail' company.slug lease.id %}">Līguma detaļas</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Dzēst līgumu</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Dzēst īres līgumu</h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                                </div>
+                                <h4>Vai tiešām vēlaties dzēst šo īres līgumu?</h4>
+                                <p class="text-muted">Šī darbība ir neatgriezeniska. Tiks dzēsti visi ar līgumu saistītie dati, tostarp dokumenti un rēķini.</p>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">Līguma informācija</h5>
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Adrese:</dt>
+                                        <dd class="col-sm-8">{{ lease.unit.property.address }}</dd>
+                                        
+                                        <dt class="col-sm-4">Telpa/Dzīvoklis:</dt>
+                                        <dd class="col-sm-8">{{ lease.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-4">Īrnieks:</dt>
+                                        <dd class="col-sm-8">{{ lease.tenant.get_full_name|default:"Nav īrnieka" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Sākuma datums:</dt>
+                                        <dd class="col-sm-8">{{ lease.start_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Beigu datums:</dt>
+                                        <dd class="col-sm-8">{{ lease.end_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Īres maksa:</dt>
+                                        <dd class="col-sm-8">{{ lease.rent_amount }} €/mēnesī</dd>
+                                        
+                                        <dt class="col-sm-4">Statuss:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if lease.status == 'draft' %}
+                                            <span class="badge bg-secondary">Melnraksts</span>
+                                            {% elif lease.status == 'active' %}
+                                            <span class="badge bg-success">Aktīvs</span>
+                                            {% elif lease.status == 'terminated' %}
+                                            <span class="badge bg-danger">Izbeigts</span>
+                                            {% elif lease.status == 'expired' %}
+                                            <span class="badge bg-warning">Beidzies</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-danger mb-4">
+                                <div class="d-flex">
+                                    <div class="me-3">
+                                        <i class="bi bi-exclamation-octagon-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5>Šo darbību nav iespējams atsaukt!</h5>
+                                        <p class="mb-0">Līguma dzēšana atbrīvos telpu, padarot to pieejamu iznomāšanai.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="confirm_delete" value="yes">
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'leases:lease_detail' company.slug lease.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash"></i> Dzēst līgumu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

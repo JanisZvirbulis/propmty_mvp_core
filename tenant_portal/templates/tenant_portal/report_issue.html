@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ziņot par problēmu - {{ unit.property.address }} - Propmty{% endblock %}
+
+{% block content %}
+{% include 'partials/navbar.html'%}
+<div class="container py-4">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tenant_portal:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'tenant_portal:tenant_issues' %}">Problēmas</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Ziņot par problēmu</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Ziņot par problēmu īpašumā</h5>
+        </div>
+        <div class="card-body">
+            <h6 class="border-bottom pb-2 mb-4">Īpašuma informācija</h6>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Adrese:</dt>
+                        <dd class="col-sm-8">{{ unit.property.address }}</dd>
+                        
+                        <dt class="col-sm-4">Telpa/dzīvoklis:</dt>
+                        <dd class="col-sm-8">{{ unit.unit_number }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Platība:</dt>
+                        <dd class="col-sm-8">{{ unit.area }} m²</dd>
+                        
+                        <dt class="col-sm-4">Īres termiņš:</dt>
+                        <dd class="col-sm-8">{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <h6 class="border-bottom pb-2 mb-4">Problēmas detaļas</h6>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.issue_type.id_for_label }}" class="form-label">Problēmas tips *</label>
+                        {{ form.issue_type }}
+                        {% if form.issue_type.errors %}
+                            <div class="text-danger">{{ form.issue_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.priority.id_for_label }}" class="form-label">Prioritāte *</label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                            <div class="text-danger">{{ form.priority.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            Zema: nav steidzama, Vidēja: vajadzīga uzmanība, Augsta: steidzama problēma, Kritiska: nepieciešama tūlītēja rīcība
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">Problēmas apraksts *</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger">{{ form.description.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">
+                        Lūdzu, aprakstiet problēmu pēc iespējas detalizētāk, iekļaujot nepieciešamo informāciju problēmas risināšanai.
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="{{ form.images.id_for_label }}" class="form-label">
+                        Attēli
+                    </label>
+                    <input type="file" name="images" class="form-control" multiple accept="image/*">
+                    {% if form.images.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.images.errors }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        Varat augšupielādēt vairākus attēlus, lai labāk ilustrētu problēmu. Maksimālais izmērs katram attēlam: 5MB.
+                    </div>
+                </div>
+                
+                {% comment %} <div class="mb-4">
+                    <label for="{{ form.images.id_for_label }}" class="form-label">Attēli</label>
+                    {{ form.images }}
+                    {% if form.images.errors %}
+                        <div class="text-danger">{{ form.images.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">
+                        Varat augšupielādēt vairākus attēlus, lai labāk ilustrētu problēmu. Maksimālais izmērs katram attēlam: 5MB.
+                    </div>
+                </div> {% endcomment %}
+                
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="bi bi-info-circle-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h5>Problēmu ziņošanas process</h5>
+                            <p class="mb-0">
+                                Pēc problēmas ziņošanas pārvaldnieks izskatīs jūsu ziņojumu un piešķirs speciālistu tās risināšanai.
+                                Jūs varēsiet sekot līdzi problēmas risināšanas statusam. Par visām izmaiņām jūs saņemsiet paziņojumu.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'tenant_portal:tenant_issues' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Atcelt un atgriezties
+                    </a>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Ziņot par problēmu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

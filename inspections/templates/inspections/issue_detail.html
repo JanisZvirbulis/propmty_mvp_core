@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Problēma {{ issue.id|truncatechars:8 }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'inspections:company_issues' company.slug %}">Problēmas</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ issue.id|truncatechars:8 }}</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    Problēma #{{ issue.id|truncatechars:8 }} - {{ issue.get_issue_type_display }}
+                </h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'inspections:company_issues' company.slug %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz sarakstu
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Problēmas statuss un darbības -->
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <div class="d-flex align-items-center p-3">
+                        <div class="me-3">
+                            {% if issue.status == 'reported' %}
+                            <span class="badge bg-secondary p-2">
+                                <i class="bi bi-exclamation-circle fs-4"></i>
+                            </span>
+                            {% elif issue.status == 'assigned' %}
+                            <span class="badge bg-info p-2">
+                                <i class="bi bi-person-check fs-4"></i>
+                            </span>
+                            {% elif issue.status == 'in_progress' %}
+                            <span class="badge bg-primary p-2">
+                                <i class="bi bi-tools fs-4"></i>
+                            </span>
+                            {% elif issue.status == 'resolved' %}
+                            <span class="badge bg-success p-2">
+                                <i class="bi bi-check-circle fs-4"></i>
+                            </span>
+                            {% elif issue.status == 'closed' %}
+                            <span class="badge bg-dark p-2">
+                                <i class="bi bi-lock fs-4"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-0">
+                                Status: 
+                                {% if issue.status == 'reported' %}
+                                <span class="badge bg-secondary">Ziņota</span>
+                                {% elif issue.status == 'assigned' %}
+                                <span class="badge bg-info">Piešķirta</span>
+                                {% elif issue.status == 'in_progress' %}
+                                <span class="badge bg-primary">Procesā</span>
+                                {% elif issue.status == 'resolved' %}
+                                <span class="badge bg-success">Atrisināta</span>
+                                {% elif issue.status == 'closed' %}
+                                <span class="badge bg-dark">Slēgta</span>
+                                {% endif %}
+                            </h5>
+                            <p class="mb-0 text-muted">
+                                Prioritāte: 
+                                {% if issue.priority == 'low' %}
+                                <span class="badge bg-success">Zema</span>
+                                {% elif issue.priority == 'medium' %}
+                                <span class="badge bg-info">Vidēja</span>
+                                {% elif issue.priority == 'high' %}
+                                <span class="badge bg-warning">Augsta</span>
+                                {% elif issue.priority == 'critical' %}
+                                <span class="badge bg-danger">Kritiska</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="ms-auto">
+                            {% if issue.status == 'reported' %}
+                            <form method="post" action="{% url 'inspections:assign_maintenance' company.slug issue.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-tools me-2"></i> Piešķirt remonta darbu
+                                </button>
+                            </form>
+                            {% elif issue.status == 'assigned' or issue.status == 'in_progress' %}
+                            <form method="post" action="{% url 'inspections:update_issue_status' company.slug issue.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="resolved">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle me-2"></i> Atzīmēt kā atrisinātu
+                                </button>
+                            </form>
+                            {% elif issue.status == 'resolved' %}
+                            <form method="post" action="{% url 'inspections:update_issue_status' company.slug issue.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="closed">
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="bi bi-lock me-2"></i> Slēgt problēmu
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <!-- Problēmas detaļas -->
+                <div class="col-md-8">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Problēmas detaļas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Adrese:</dt>
+                                        <dd class="col-sm-8">{{ issue.unit.property.address }}</dd>
+                                        
+                                        <dt class="col-sm-4">Telpa:</dt>
+                                        <dd class="col-sm-8">{{ issue.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-4">Problēmas tips:</dt>
+                                        <dd class="col-sm-8">{{ issue.get_issue_type_display }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Ziņotājs:</dt>
+                                        <dd class="col-sm-8">{{ issue.reported_by.get_full_name }}</dd>
+                                        
+                                        <dt class="col-sm-4">Datums:</dt>
+                                        <dd class="col-sm-8">{{ issue.created_at|date:"d.m.Y H:i" }}</dd>
+                                        
+                                        {% if issue.expected_completion %}
+                                        <dt class="col-sm-4">Plānotais atrisināšanas datums:</dt>
+                                        <dd class="col-sm-8">{{ issue.expected_completion|date:"d.m.Y" }}</dd>
+                                        {% endif %}
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            <h6 class="border-bottom pb-2 mb-3">Problēmas apraksts</h6>
+                            <p>{{ issue.description }}</p>
+                            
+                            {% if issue.resolved_by %}
+                            <h6 class="border-bottom pb-2 mb-3 mt-4">Risinājuma informācija</h6>
+                            <dl class="row">
+                                <dt class="col-sm-3">Atrisināja:</dt>
+                                <dd class="col-sm-9">{{ issue.resolved_by.get_full_name }}</dd>
+                                
+                                <dt class="col-sm-3">Atrisināšanas datums:</dt>
+                                <dd class="col-sm-9">{{ issue.resolved_date|date:"d.m.Y H:i" }}</dd>
+                            </dl>
+                            {% endif %}
+                            
+                            {% if issue.estimated_cost and issue.show_estimated_cost %}
+                            <h6 class="border-bottom pb-2 mb-3 mt-4">Izmaksu informācija</h6>
+                            <p><strong>Izmaksu aplēse:</strong> {{ issue.estimated_cost }} €</p>
+                            {% endif %}
+                            
+                            <!-- Attēli, ja tādi ir -->
+                            {% if issue.images.exists %}
+                            <h6 class="border-bottom pb-2 mb-3 mt-4">Problēmas attēli</h6>
+                            <div class="row">
+                                {% for image in issue.images.all %}
+                                <div class="col-md-4 mb-3">
+                                    <a href="{{ image.image.url }}" target="_blank">
+                                        <img src="{{ image.image.url }}" alt="Problēmas attēls" class="img-fluid rounded">
+                                    </a>
+                                    <small class="d-block text-muted mt-1">
+                                        Pievienojis: {{ image.uploaded_by.get_full_name }}
+                                    </small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Remonta informācija -->
+                <div class="col-md-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Remonta informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if issue.maintenance_records.exists %}
+                                {% with maintenance=issue.maintenance_records.first %}
+                                <dl class="row">
+                                    <dt class="col-sm-5">Statuss:</dt>
+                                    <dd class="col-sm-7">
+                                        {% if maintenance.status == 'scheduled' %}
+                                        <span class="badge bg-info">Ieplānots</span>
+                                        {% elif maintenance.status == 'in_progress' %}
+                                        <span class="badge bg-primary">Procesā</span>
+                                        {% elif maintenance.status == 'completed' %}
+                                        <span class="badge bg-success">Pabeigts</span>
+                                        {% elif maintenance.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Atcelts</span>
+                                        {% endif %}
+                                    </dd>
+                                    
+                                    <dt class="col-sm-5">Piešķirts:</dt>
+                                    <dd class="col-sm-7">{{ maintenance.assigned_to.get_full_name }}</dd>
+                                    
+                                    <dt class="col-sm-5">Plānots:</dt>
+                                    <dd class="col-sm-7">{{ maintenance.scheduled_date|date:"d.m.Y H:i" }}</dd>
+                                    
+                                    {% if maintenance.completed_date %}
+                                    <dt class="col-sm-5">Pabeigts:</dt>
+                                    <dd class="col-sm-7">{{ maintenance.completed_date|date:"d.m.Y H:i" }}</dd>
+                                    {% endif %}
+                                    
+                                    {% if maintenance.cost %}
+                                    <dt class="col-sm-5">Izmaksas:</dt>
+                                    <dd class="col-sm-7">{{ maintenance.cost }} €</dd>
+                                    {% endif %}
+                                </dl>
+                                
+                                <h6 class="border-bottom pb-2 mb-3 mt-4">Remonta apraksts</h6>
+                                <p>{{ maintenance.description }}</p>
+                                
+                                {% if maintenance.notes %}
+                                <h6 class="border-bottom pb-2 mb-3 mt-4">Piezīmes</h6>
+                                <p>{{ maintenance.notes }}</p>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="bi bi-tools fs-3 text-muted"></i>
+                                    </div>
+                                    <h6>Nav remonta ierakstu</h6>
+                                    <p class="text-muted mb-3">Šai problēmai nav pievienoti remonta darbi.</p>
+                                    
+                                    {% if issue.status == 'reported' %}
+                                    <a href="{% url 'inspections:assign_maintenance' company.slug issue.id %}" class="btn btn-primary">
+                                        <i class="bi bi-tools me-2"></i> Piešķirt remonta darbu
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

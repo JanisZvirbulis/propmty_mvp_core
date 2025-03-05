@@ -1,0 +1,22 @@
+UZAICINĀJUMS PIEVIENOTIES UZŅĒMUMAM
+
+Labdien!
+
+Jūs esat uzaicināts pievienoties uzņēmumam {{ invitation.company.name }} kā dalībnieks platformā Propmty.
+
+---
+Uzņēmums: {{ invitation.company.name }}
+Loma: {% if invitation.role == 'ADMIN' %}Administrators{% elif invitation.role == 'MANAGER' %}Menedžeris{% else %}Dalībnieks{% endif %}
+Uzaicinājuma derīguma termiņš: {{ expires_at|date:"d.m.Y H:i" }}
+---
+
+Lai pieņemtu uzaicinājumu, lūdzu, apmeklējiet šo saiti:
+{{ invitation_url }}
+
+Ja jūs jau esat reģistrēts Propmty platformā, varēsiet uzreiz pievienoties uzņēmumam. Ja nē, jums būs jāizveido jauns konts.
+
+Paldies,
+Propmty komanda
+
+---
+Šī e-pasta saturs ir konfidenciāls un paredzēts tikai adresātam.

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Īpašumi - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Īpašumi {{properties|length}} / {{company.subscription.plan.max_properties}}</h1>
+                
+                {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                    {% if company.subscription and properties|length < company.subscription.plan.max_properties %}
+                        <!-- Šis saturs tiks rādīts tikai tad, ja properties skaits ir mazāks par max_properties -->
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <a href="{% url 'properties:property_create' company.slug %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Pievienot īpašumu
+                            </a>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Īpašumu saraksts -->
+            {% if properties %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for property in properties %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">{{ property.address|capfirst }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Veids:</strong> {{ property.get_building_type_display }}</p>
+                                <p class="mb-1"><strong>Platība:</strong> {{ property.total_area }} m²</p>
+                                <p class="mb-1"><strong>Stāvi:</strong> {{ property.floor_count }}</p>
+                                {% if property.year_built %}
+                                <p class="mb-1"><strong>Būvēts:</strong> {{ property.year_built }}. gadā</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="border-bottom pb-1">Skaitītāji</h6>
+                                <div class="d-flex flex-wrap mt-2">
+                                    <span class="badge {% if property.has_building_water_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-droplet"></i> Ūdens
+                                    </span>
+                                    <span class="badge {% if property.has_building_gas_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-fire"></i> Gāze
+                                    </span>
+                                    <span class="badge {% if property.has_building_electricity_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-lightning"></i> Elektrība
+                                    </span>
+                                    <span class="badge {% if property.has_building_heating_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-thermometer-half"></i> Apkure
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Pievienots: {{ property.created_at|date:"d.m.Y" }}</small>
+                            <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Skatīt
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-building fs-1 text-muted"></i>
+                </div>
+                <h3>Nav pievienotu īpašumu</h3>
+                <p class="text-muted">Pievienojiet pirmo īpašumu, lai sāktu pārvaldību</p>
+                
+                {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                <a href="{% url 'properties:property_create' company.slug %}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle"></i> Pievienot īpašumu
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

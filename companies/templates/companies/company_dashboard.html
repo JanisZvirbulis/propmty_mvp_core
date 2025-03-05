@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar navigācija -->
+        {% include 'partials/sidebar.html' %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% if active_page == 'dashboard' %}
+                        Pārskats
+                    {% elif active_page == 'properties' %}
+                        Īpašumi
+                    {% elif active_page == 'members' %}
+                        Dalībnieki
+                    {% elif active_page == 'invoices' %}
+                        Rēķini
+                    {% elif active_page == 'reports' %}
+                        Atskaites
+                    {% elif active_page == 'settings' %}
+                        Iestatījumi
+                    {% elif active_page == 'subscription' %}
+                        Abonements
+                    {% endif %}
+                </h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if active_page == 'dashboard' %}
+                        <!-- Dashboard pogas -->
+                    {% elif active_page == 'properties' %}
+                        {% if company.subscription and properties|length < company.subscription.plan.max_properties %}
+                        <!-- Šis saturs tiks rādīts tikai tad, ja properties skaits ir mazāks par max_properties -->
+                            <a href="{% url 'properties:property_create' company.slug %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> Pievienot īpašumu
+                            </a>
+                        {% endif %}
+                    {% elif active_page == 'members' %}
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-person-plus"></i> Uzaicināt dalībnieku
+                        </a>
+                    {% elif active_page == 'invoices' %}
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Dashboard saturs -->
+            {% if active_page == 'dashboard' %}
+            <div class="row">
+                <!-- Statistikas kartītes -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary rounded-3 p-3 me-3">
+                                    <i class="bi bi-buildings text-white fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-0">Īpašumi</h6>
+                                    <h2 class="mt-2 mb-0">{{ properties|default_if_none:"0"|length }} / {{company.subscription.plan.max_properties}}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success rounded-3 p-3 me-3">
+                                    <i class="bi bi-people text-white fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-0">Dalībnieki</h6>
+                                    <h2 class="mt-2 mb-0">{{ members|length|add:"1" }} / {{company.subscription.plan.max_users}}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-info rounded-3 p-3 me-3">
+                                    <i class="bi bi-cash-coin text-white fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-0">Abonements</h6>
+                                    <h2 class="mt-2 mb-0">
+                                        {% if company.subscription %}
+                                            {{ company.subscription.plan.name }}
+                                        {% else %}
+                                            Bezmaksas
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Dalībnieku saraksts -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Uzņēmuma dalībnieki</h5>
+                               
+                                {% if request.is_company_owner or request.is_company_admin %}
+                                <a href="{% url 'companies_tenant:invite_member' company.slug %}" class="btn btn-sm btn-outline-light">
+                                    <i class="bi bi-person-plus"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <!-- Īpašnieks -->
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar bg-success text-white rounded-circle me-3">
+                                            {{ company.owner.first_name|first }}{{ company.owner.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ company.owner.get_full_name }}</h6>
+                                            <span class="badge bg-success">Īpašnieks</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Dalībnieki -->
+                                {% for member in members %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar 
+                                            {% if member.role == 'ADMIN' %}bg-primary{% elif member.role == 'MANAGER' %}bg-info{% else %}bg-secondary{% endif %} 
+                                            text-white rounded-circle me-3">
+                                            {{ member.user.first_name|first }}{{ member.user.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ member.user.get_full_name }}</h6>
+                                            {% if member.role == 'ADMIN' %}
+                                            <span class="badge bg-primary">Administrators</span>
+                                            {% elif member.role == 'MANAGER' %}
+                                            <span class="badge bg-info">Menedžeris</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Dalībnieks</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if members|length < 1 %}
+                            <div class="text-center py-3">
+                                <p class="text-muted mb-0">Nav pievienotu dalībnieku.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if request.is_company_owner or request.is_company_admin %}
+                        <div class="card-footer text-end">
+                            <a href="{% url 'companies_tenant:company_members' company.slug %}" class="btn btn-sm btn-primary">Skatīt visus</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Īpašumu saraksts -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Īpašumi</h5>
+                                {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                                    {% if company.subscription and properties|default_if_none:"0"|length < company.subscription.plan.max_properties %}
+                                        <!-- Šis saturs tiks rādīts tikai tad, ja properties skaits ir mazāks par max_properties -->
+                                        <a href="{% url 'properties:property_create' company.slug %}" class="btn btn-sm btn-outline-light">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                    {% else %}
+                                        <i class="bi bi-building fs-5"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if properties %}
+                            <div class="list-group list-group-flush">
+                                {% for property in properties %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">{{ property.address|capfirst }}</h6>
+                                            <small class="text-muted">{{ property.get_building_type_display }}</small>
+                                        </div>
+                                        <span class="badge bg-info rounded-pill">{{ property.units.count }} Telpas</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-building fs-1 text-muted"></i>
+                                </div>
+                                <h6>Nav pievienotu īpašumu</h6>
+                                {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                                <p class="text-muted mb-3">Sāciet pievienot īpašumus, lai efektīvi tos pārvaldītu.</p>
+                                <a href="{% url 'properties:property_create' company.slug %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Pievienot īpašumu
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-end">
+                            <a href="{% url 'properties:property_list' company.slug %}" class="btn btn-sm btn-primary">Skatīt visus</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Citu sadaļu saturs -->
+            {% if active_page == 'members' %}
+                <!-- Šeit būtu member skats -->
+            {% elif active_page == 'properties' %}
+                <!-- Šeit būtu property skats -->
+            {% elif active_page == 'invoices' %}
+                <!-- Šeit būtu invoice skats -->
+            {% elif active_page == 'reports' %}
+                <!-- Šeit būtu report skats -->
+            {% elif active_page == 'settings' %}
+                <!-- Šeit būtu settings skats -->
+            {% elif active_page == 'subscription' %}
+                <!-- Šeit būtu subscription skats -->
+            {% endif %}
+        </main>
+    </div>
+</div>
+
+{% endblock %}

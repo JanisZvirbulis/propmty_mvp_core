@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Skaitītāju rādījumi - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Skaitītāju rādījumi</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                        <i class="bi bi-funnel me-1"></i> Filtri
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filtru sadaļa -->
+            <div class="collapse mb-4" id="filterCollapse">
+                <div class="card shadow-sm">
+                    <div class="card-body bg-light">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Īpašums</label>
+                                <select name="property" class="form-select">
+                                    <option value="">Visi īpašumi</option>
+                                    {% for property in properties %}
+                                    <option value="{{ property.id }}" {% if filters.property_id == property.id|stringformat:"s" %}selected{% endif %}>{{ property.address }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            {% if units %}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Telpa</label>
+                                <select name="unit" class="form-select">
+                                    <option value="">Visas telpas</option>
+                                    {% for unit in units %}
+                                    <option value="{{ unit.id }}" {% if filters.unit_id == unit.id|stringformat:"s" %}selected{% endif %}>{{ unit.unit_number }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Verificēts</label>
+                                <select name="verification" class="form-select">
+                                    <option value="">Visi</option>
+                                    <option value="verified" {% if filters.verification == 'verified' %}selected{% endif %}>Verificēti</option>
+                                    <option value="unverified" {% if filters.verification == 'unverified' %}selected{% endif %}>Neverificēti</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Datums no</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Datums līdz</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to|default:'' }}">
+                            </div>
+                            
+                            <div class="col-12 text-end">
+                                <a href="{% url 'properties:company_meter_readings' company.slug %}" class="btn btn-secondary me-2">Atcelt</a>
+                                <button type="submit" class="btn btn-primary">Filtrēt</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rādījumu tabula -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    {% if readings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Datums</th>
+                                    <th>Īpašums</th>
+                                    <th>Telpa</th>
+                                    <th>Skaitītājs</th>
+                                    <th>Rādījums</th>
+                                    <th>Iesniedzējs</th>
+                                    <th>Statuss</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reading in readings %}
+                                <tr>
+                                    <td>{{ reading.reading_date|date:"d.m.Y" }}</td>
+                                    <td>{{ reading.meter.unit.property.address|capfirst }}</td>
+                                    <td>{{ reading.meter.unit.unit_number }}</td>
+                                    <td>{{ reading.meter.get_meter_type_display }}</td>
+                                    <td>{{ reading.reading }}</td>
+                                    <td>{{ reading.submitted_by.get_full_name }}</td>
+                                    <td>
+                                        {% if reading.is_verified %}
+                                        <span class="badge bg-success">Verificēts</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Nav verificēts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'properties:unit_meter_detail' company.slug reading.meter.unit.property.id reading.meter.unit.id reading.meter.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            
+                                            {% if not reading.is_verified %}
+                                            <form method="post" action="{% url 'properties:verify_meter_reading' company.slug reading.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-success" title="Verificēt">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Lapošana -->
+                    {% if readings.has_other_pages %}
+                    <div class="mt-4">
+                        <nav aria-label="Pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if readings.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo; Pirmā</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ readings.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Iepr.</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Pirmā</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Iepr.</span>
+                                </li>
+                                {% endif %}
+
+                                {% for i in readings.paginator.page_range %}
+                                    {% if readings.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% elif i > readings.number|add:'-3' and i < readings.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if readings.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ readings.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Nāk.</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ readings.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Pēdējā &raquo;</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Nāk.</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pēdējā &raquo;</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-clipboard-data fs-1 text-muted"></i>
+                        </div>
+                        <h4>Nav atrasti rādījumi</h4>
+                        <p class="text-muted">Izmantojot filtrus, mēģiniet izmainīt meklēšanas kritērijus.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

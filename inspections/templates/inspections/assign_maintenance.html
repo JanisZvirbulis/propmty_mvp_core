@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Piešķirt remonta darbu - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'inspections:company_issues' company.slug %}">Problēmas</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'inspections:issue_detail' company.slug issue.id %}">{{ issue.id|truncatechars:8 }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Piešķirt remonta darbu</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Piešķirt remonta darbu</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'inspections:issue_detail' company.slug issue.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz problēmu
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Problēmas informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Adrese:</dt>
+                                        <dd class="col-sm-8">{{ issue.unit.property.address }}</dd>
+                                        
+                                        <dt class="col-sm-4">Telpa:</dt>
+                                        <dd class="col-sm-8">{{ issue.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-4">ID:</dt>
+                                        <dd class="col-sm-8">{{ issue.id|truncatechars:8 }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Problēmas tips:</dt>
+                                        <dd class="col-sm-8">{{ issue.get_issue_type_display }}</dd>
+                                        
+                                        <dt class="col-sm-4">Prioritāte:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if issue.priority == 'low' %}
+                                            <span class="badge bg-success">Zema</span>
+                                            {% elif issue.priority == 'medium' %}
+                                            <span class="badge bg-info">Vidēja</span>
+                                            {% elif issue.priority == 'high' %}
+                                            <span class="badge bg-warning">Augsta</span>
+                                            {% elif issue.priority == 'critical' %}
+                                            <span class="badge bg-danger">Kritiska</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Ziņotājs:</dt>
+                                        <dd class="col-sm-8">{{ issue.reported_by.get_full_name }}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            <h6 class="border-bottom pb-2 mb-3 mt-3">Problēmas apraksts</h6>
+                            <p>{{ issue.description }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Remonta darba piešķiršana</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Izpildītāja informācija</h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Izpildītājs *</label>
+                                            {{ form.assigned_to }}
+                                            {% if form.assigned_to.errors %}
+                                                <div class="text-danger">{{ form.assigned_to.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Izvēlieties personu, kas būs atbildīga par remonta darba veikšanu</div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">Plānotais datums *</label>
+                                            {{ form.scheduled_date }}
+                                            {% if form.scheduled_date.errors %}
+                                                <div class="text-danger">{{ form.scheduled_date.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Norādiet, kad plānots veikt remonta darbus</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Darba detaļas</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label">Darba apraksts *</label>
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                            <div class="text-danger">{{ form.description.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.cost.id_for_label }}" class="form-label">Plānotās izmaksas (€)</label>
+                                        {{ form.cost }}
+                                        {% if form.cost.errors %}
+                                            <div class="text-danger">{{ form.cost.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Atstājiet tukšu, ja izmaksas vēl nav zināmas</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info mb-4">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="bi bi-info-circle-fill fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Informācija par darba piešķiršanu</h5>
+                                            <p class="mb-0">
+                                                Pēc remonta darba piešķiršanas problēmas statuss tiks mainīts uz "Piešķirta". 
+                                                Izpildītājs saņems paziņojumu par jaunu uzdevumu. Pēc darba pabeigšanas 
+                                                problēma tiks automātiski atzīmēta kā "Atrisināta".
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <a href="{% url 'inspections:issue_detail' company.slug issue.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atcelt un atgriezties
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check2"></i> Piešķirt remonta darbu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Īres līgumi - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Īres līgumi</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Īres līgumi</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle me-2" data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel"></i> Filtri
+                    </button>
+                    <div class="dropdown-menu p-3" style="width: 300px;">
+                        <form method="get">
+                            <div class="mb-3">
+                                <label class="form-label">Statuss</label>
+                                <select name="status" class="form-select">
+                                    <option value="">Visi</option>
+                                    <option value="draft" {% if filters.status == 'draft' %}selected{% endif %}>Melnraksts</option>
+                                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Aktīvs</option>
+                                    <option value="terminated" {% if filters.status == 'terminated' %}selected{% endif %}>Izbeigts</option>
+                                    <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Beidzies</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Īpašums</label>
+                                <select name="property" class="form-select">
+                                    <option value="">Visi</option>
+                                    {% for property in properties %}
+                                    <option value="{{ property.id }}" {% if filters.property_id == property.id|stringformat:"s" %}selected{% endif %}>{{ property.address }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Datums no</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from|default:'' }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Datums līdz</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to|default:'' }}">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Filtrēt</button>
+                                <a href="{% url 'leases:lease_list' company.slug %}" class="btn btn-outline-secondary">Notīrīt</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Īres līgumu saraksts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Īpašums/Telpa</th>
+                                    <th>Īrnieks</th>
+                                    <th>Periods</th>
+                                    <th>Īres maksa</th>
+                                    <th>Statuss</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lease in page_obj %}
+                                <tr>
+                                    <td>
+                                        {{ lease.unit.property.address|capfirst }} - {{ lease.unit.unit_number }}
+                                    </td>
+                                    <td>
+                                        {% if lease.tenant %}
+                                            {{ lease.tenant.get_full_name }}
+                                        {% else %}
+                                            <span class="badge bg-warning">Gaidām īrnieku</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}
+                                    </td>
+                                    <td>
+                                        {{ lease.rent_amount }} €/mēn.
+                                    </td>
+                                    <td>
+                                        {% if lease.status == 'draft' %}
+                                            <span class="badge bg-secondary">Melnraksts</span>
+                                        {% elif lease.status == 'active' %}
+                                            <span class="badge bg-success">Aktīvs</span>
+                                        {% elif lease.status == 'terminated' %}
+                                            <span class="badge bg-danger">Izbeigts</span>
+                                        {% elif lease.status == 'expired' %}
+                                            <span class="badge bg-warning">Beidzies</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'leases:lease_detail' company.slug lease.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'leases:lease_edit' company.slug lease.id %}" class="btn btn-outline-secondary" title="Rediģēt">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <div class="mt-4">
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo; Pirmā</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Iepr.</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Pirmā</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Iepr.</span>
+                                </li>
+                                {% endif %}
+                                
+                                {% for i in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Nāk.</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Pēdējā &raquo;</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Nāk.</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pēdējā &raquo;</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                        </div>
+                        <h4>Nav pievienotu īres līgumu</h4>
+                        <p class="text-muted">Pievienojiet īres līgumus telpām, lai tie parādītos šeit.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

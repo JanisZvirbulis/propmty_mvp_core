@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Skaitītāji - {{ unit.unit_number }} - {{ property.address }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}">{{ unit.unit_number }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Skaitītāji</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Skaitītāji: {{ property.address }} - {{ unit.unit_number }}</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz telpu
+                        </a>
+                    </div>
+                    
+                    <a href="{% url 'properties:unit_meter_add' company.slug property.id unit.id %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Pievienot skaitītāju
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Aktīvie skaitītāji -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Aktīvie skaitītāji</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_meters %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Veids</th>
+                                    <th>Numurs</th>
+                                    <th>Statuss</th>
+                                    <th>Derīguma termiņš</th>
+                                    <th>Pēdējais rādījums</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meter in active_meters %}
+                                <tr>
+                                    <td>{{ meter.get_meter_type_display }}</td>
+                                    <td>{{ meter.meter_number }}</td>
+                                    <td><span class="badge bg-success">{{ meter.get_status_display }}</span></td>
+                                    <td>{% if meter.expire_date %}{{ meter.expire_date|date:"d.m.Y" }}{% else %}-{% endif %}</td>
+                                    <td>
+                                        {% with last_reading=meter.readings.first %}
+                                            {% if last_reading %}
+                                                {{ last_reading.reading }} ({{ last_reading.reading_date|date:"d.m.Y" }})
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'properties:unit_meter_detail' company.slug property.id unit.id meter.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'properties:meter_reading_add' company.slug property.id unit.id meter.id %}" class="btn btn-outline-success" title="Pievienot rādījumu">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </a>
+                                            <a href="{% url 'properties:unit_meter_edit' company.slug property.id unit.id meter.id %}" class="btn btn-outline-secondary" title="Rediģēt">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'properties:unit_meter_delete' company.slug property.id unit.id meter.id %}" class="btn btn-outline-danger" title="Dzēst">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-speedometer fs-1 text-muted"></i>
+                        </div>
+                        <h5>Nav aktīvu skaitītāju</h5>
+                        <p class="text-muted mb-3">Pievienojiet skaitītājus, lai varētu sekot patēriņam.</p>
+                        
+                        <a href="{% url 'properties:unit_meter_add' company.slug property.id unit.id %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Pievienot skaitītāju
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Neaktīvie skaitītāji -->
+            {% if inactive_meters %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Neaktīvie skaitītāji</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Veids</th>
+                                    <th>Numurs</th>
+                                    <th>Statuss</th>
+                                    <th>Derīguma termiņš</th>
+                                    <th>Pēdējais rādījums</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meter in inactive_meters %}
+                                <tr>
+                                    <td>{{ meter.get_meter_type_display }}</td>
+                                    <td>{{ meter.meter_number }}</td>
+                                    <td>
+                                        {% if meter.status == 'inactive' %}
+                                        <span class="badge bg-secondary">{{ meter.get_status_display }}</span>
+                                        {% elif meter.status == 'expired' %}
+                                        <span class="badge bg-warning">{{ meter.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{% if meter.expire_date %}{{ meter.expire_date|date:"d.m.Y" }}{% else %}-{% endif %}</td>
+                                    <td>
+                                        {% with last_reading=meter.readings.first %}
+                                            {% if last_reading %}
+                                                {{ last_reading.reading }} ({{ last_reading.reading_date|date:"d.m.Y" }})
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'properties:unit_meter_detail' company.slug property.id unit.id meter.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

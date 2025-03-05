@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Problēmu saraksts - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Problēmu saraksts</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                        <i class="bi bi-funnel me-1"></i> Filtri
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filtru sadaļa -->
+            <div class="collapse mb-4" id="filterCollapse">
+                <div class="card shadow-sm">
+                    <div class="card-body bg-light">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Īpašums</label>
+                                <select name="property" class="form-select">
+                                    <option value="">Visi īpašumi</option>
+                                    {% for property in properties %}
+                                    <option value="{{ property.id }}" {% if filters.property_id == property.id|stringformat:"s" %}selected{% endif %}>{{ property.address }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            {% if units %}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Telpa</label>
+                                <select name="unit" class="form-select">
+                                    <option value="">Visas telpas</option>
+                                    {% for unit in units %}
+                                    <option value="{{ unit.id }}" {% if filters.unit_id == unit.id|stringformat:"s" %}selected{% endif %}>{{ unit.unit_number }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Statuss</label>
+                                <select name="status" class="form-select">
+                                    <option value="">Visi statusi</option>
+                                    <option value="reported" {% if filters.status == 'reported' %}selected{% endif %}>Ziņotas</option>
+                                    <option value="assigned" {% if filters.status == 'assigned' %}selected{% endif %}>Piešķirtas</option>
+                                    <option value="in_progress" {% if filters.status == 'in_progress' %}selected{% endif %}>Procesā</option>
+                                    <option value="resolved" {% if filters.status == 'resolved' %}selected{% endif %}>Atrisinātas</option>
+                                    <option value="closed" {% if filters.status == 'closed' %}selected{% endif %}>Slēgtas</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Prioritāte</label>
+                                <select name="priority" class="form-select">
+                                    <option value="">Visas prioritātes</option>
+                                    <option value="low" {% if filters.priority == 'low' %}selected{% endif %}>Zema</option>
+                                    <option value="medium" {% if filters.priority == 'medium' %}selected{% endif %}>Vidēja</option>
+                                    <option value="high" {% if filters.priority == 'high' %}selected{% endif %}>Augsta</option>
+                                    <option value="critical" {% if filters.priority == 'critical' %}selected{% endif %}>Kritiska</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Problēmas tips</label>
+                                <select name="type" class="form-select">
+                                    <option value="">Visi tipi</option>
+                                    <option value="plumbing" {% if filters.type == 'plumbing' %}selected{% endif %}>Santehnika</option>
+                                    <option value="electrical" {% if filters.type == 'electrical' %}selected{% endif %}>Elektrība</option>
+                                    <option value="structural" {% if filters.type == 'structural' %}selected{% endif %}>Konstrukcija</option>
+                                    <option value="appliance" {% if filters.type == 'appliance' %}selected{% endif %}>Ierīces</option>
+                                    <option value="heating" {% if filters.type == 'heating' %}selected{% endif %}>Apkure</option>
+                                    <option value="water" {% if filters.type == 'water' %}selected{% endif %}>Ūdens</option>
+                                    <option value="ventilation" {% if filters.type == 'ventilation' %}selected{% endif %}>Ventilācija</option>
+                                    <option value="security" {% if filters.type == 'security' %}selected{% endif %}>Drošība</option>
+                                    <option value="other" {% if filters.type == 'other' %}selected{% endif %}>Cits</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12 text-end">
+                                <a href="{% url 'inspections:company_issues' company.slug %}" class="btn btn-secondary me-2">Atcelt</a>
+                                <button type="submit" class="btn btn-primary">Filtrēt</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Problēmu tabula -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    {% if issues %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Īpašums/Telpa</th>
+                                    <th>Tips</th>
+                                    <th>Prioritāte</th>
+                                    <th>Statuss</th>
+                                    <th>Ziņotājs</th>
+                                    <th>Datums</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in issues %}
+                                <tr>
+                                    <td>{{ issue.id|truncatechars:8 }}</td>
+                                    <td>{{ issue.unit.property.address }} - {{ issue.unit.unit_number }}</td>
+                                    <td>{{ issue.get_issue_type_display }}</td>
+                                    <td>
+                                        {% if issue.priority == 'low' %}
+                                        <span class="badge bg-success">Zema</span>
+                                        {% elif issue.priority == 'medium' %}
+                                        <span class="badge bg-info">Vidēja</span>
+                                        {% elif issue.priority == 'high' %}
+                                        <span class="badge bg-warning">Augsta</span>
+                                        {% elif issue.priority == 'critical' %}
+                                        <span class="badge bg-danger">Kritiska</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if issue.status == 'reported' %}
+                                        <span class="badge bg-secondary">Ziņota</span>
+                                        {% elif issue.status == 'assigned' %}
+                                        <span class="badge bg-info">Piešķirta</span>
+                                        {% elif issue.status == 'in_progress' %}
+                                        <span class="badge bg-primary">Procesā</span>
+                                        {% elif issue.status == 'resolved' %}
+                                        <span class="badge bg-success">Atrisināta</span>
+                                        {% elif issue.status == 'closed' %}
+                                        <span class="badge bg-dark">Slēgta</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ issue.reported_by.get_full_name }}</td>
+                                    <td>{{ issue.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'inspections:issue_detail' company.slug issue.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Skatīt
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Lapošana -->
+                    {% if issues.has_other_pages %}
+                    <div class="mt-4">
+                        <nav aria-label="Pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if issues.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo; Pirmā</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ issues.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Iepr.</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Pirmā</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Iepr.</span>
+                                </li>
+                                {% endif %}
+
+                                {% for i in issues.paginator.page_range %}
+                                    {% if issues.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% elif i > issues.number|add:'-3' and i < issues.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if issues.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ issues.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Nāk.</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ issues.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Pēdējā &raquo;</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Nāk.</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pēdējā &raquo;</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-exclamation-circle fs-1 text-muted"></i>
+                        </div>
+                        <h4>Nav atrastu problēmu</h4>
+                        <p class="text-muted">Izmantojot filtrus, mēģiniet izmainīt meklēšanas kritērijus.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manas problēmas - Propmty{% endblock %}
+
+{% block content %}
+{% include 'partials/navbar.html'%}
+<div class="container py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+        <h1 class="h2">Manas problēmas</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="reportIssueDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-circle me-1"></i> Ziņot par problēmu
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="reportIssueDropdown">
+                    {% for lease in leases %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'tenant_portal:report_issue' lease.id %}">
+                            {{ lease.unit.property.address }} - {{ lease.unit.unit_number }}
+                        </a>
+                    </li>
+                    {% empty %}
+                    <li><span class="dropdown-item">Nav aktīvu īres līgumu</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    {% if issues %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Problēmu saraksts</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Adrese</th>
+                            <th>Problēmas tips</th>
+                            <th>Prioritāte</th>
+                            <th>Datums</th>
+                            <th>Statuss</th>
+                            <th>Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in issues %}
+                        <tr>
+                            <td>{{ issue.unit.property.address }} - {{ issue.unit.unit_number }}</td>
+                            <td>{{ issue.get_issue_type_display }}</td>
+                            <td>
+                                {% if issue.priority == 'low' %}
+                                <span class="badge bg-success">Zema</span>
+                                {% elif issue.priority == 'medium' %}
+                                <span class="badge bg-info">Vidēja</span>
+                                {% elif issue.priority == 'high' %}
+                                <span class="badge bg-warning">Augsta</span>
+                                {% elif issue.priority == 'critical' %}
+                                <span class="badge bg-danger">Kritiska</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ issue.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if issue.status == 'reported' %}
+                                <span class="badge bg-secondary">Ziņota</span>
+                                {% elif issue.status == 'assigned' %}
+                                <span class="badge bg-info">Piešķirta</span>
+                                {% elif issue.status == 'in_progress' %}
+                                <span class="badge bg-primary">Procesā</span>
+                                {% elif issue.status == 'resolved' %}
+                                <span class="badge bg-success">Atrisināta</span>
+                                {% elif issue.status == 'closed' %}
+                                <span class="badge bg-dark">Slēgta</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'tenant_portal:tenant_issue_detail' issue.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Skatīt
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body text-center py-5">
+            <div class="mb-3">
+                <i class="bi bi-clipboard-check fs-1 text-muted"></i>
+            </div>
+            <h4>Nav aktīvu problēmu</h4>
+            <p class="text-muted mb-3">Pagaidām nav ziņots par problēmām jūsu īpašumos.</p>
+            
+            {% if leases %}
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="reportNewIssueDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-circle me-1"></i> Ziņot par problēmu
+                </button>
+                <ul class="dropdown-menu dropdown-menu-center" aria-labelledby="reportNewIssueDropdown">
+                    {% for lease in leases %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'tenant_portal:report_issue' lease.id %}">
+                            {{ lease.unit.property.address }} - {{ lease.unit.unit_number }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <p class="text-muted">Jums nav aktīvu īres līgumu, lai ziņotu par problēmām.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Problēmu ziņošanas process</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-exclamation-circle fs-1 text-secondary"></i>
+                        <h5 class="mt-2">1. Ziņot</h5>
+                        <p class="small text-muted">Ziņojiet par problēmu, norādot detaļas un prioritāti</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-people fs-1 text-info"></i>
+                        <h5 class="mt-2">2. Piešķiršana</h5>
+                        <p class="small text-muted">Pārvaldnieks piešķir speciālistu problēmas risināšanai</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-tools fs-1 text-primary"></i>
+                        <h5 class="mt-2">3. Risinājums</h5>
+                        <p class="small text-muted">Speciālists risina problēmu un veic nepieciešamos darbus</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                        <h5 class="mt-2">4. Pabeigšana</h5>
+                        <p class="small text-muted">Problēma tiek atzīmēta kā atrisināta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

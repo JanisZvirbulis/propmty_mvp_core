@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Skaitītāju rādījumi - Propmty{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+        <h1 class="h2">Skaitītāju rādījumi</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'tenant_portal:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Uz paneli
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    {% if leases_with_meters %}
+        {% for lease_data in leases_with_meters %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ lease_data.lease.unit.property.address }} - {{ lease_data.lease.unit.unit_number }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if lease_data.meters %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Skaitītājs</th>
+                                        <th>Numurs</th>
+                                        <th>Pēdējais rādījums</th>
+                                        <th>Tekošā mēneša rādījums</th>
+                                        <th>Darbības</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for meter in lease_data.meters %}
+                                    <tr>
+                                        <td>{{ meter.get_meter_type_display }}</td>
+                                        <td>{{ meter.meter_number }}</td>
+                                        <td>
+                                            {% if meter.last_reading %}
+                                                {{ meter.last_reading.reading }} ({{ meter.last_reading.reading_date|date:"d.m.Y" }})
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if meter.current_month_reading %}
+                                                <span class="badge bg-success">Iesniegts: {{ meter.current_month_reading.reading }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Nav iesniegts</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'tenant_portal:readings_history' lease_data.lease.id meter.id %}" class="btn btn-outline-primary" title="Vēsture">
+                                                    <i class="bi bi-clock-history"></i>
+                                                </a>
+                                                {% if not meter.current_month_reading %}
+                                                <a href="{% url 'tenant_portal:submit_reading' lease_data.lease.id meter.id %}" class="btn btn-outline-success" title="Iesniegt rādījumu">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">Šai telpai nav pievienotu skaitītāju</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-speedometer fs-1 text-muted"></i>
+                    </div>
+                    <h5>Nav aktīvu skaitītāju</h5>
+                    <p class="text-muted">Jums pašlaik nav aktīvu īres līgumu ar skaitītājiem.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informācija par skaitītāju rādījumiem</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h5><i class="bi bi-info-circle me-2"></i>Kā pareizi nolasīt un iesniegt rādījumus?</h5>
+                <ul>
+                    <li>Skaitītāju rādījumi jāiesniedz katru mēnesi no 25. līdz mēneša pēdējai dienai.</li>
+                    <li>Rādījumam jābūt lielākam vai vienādam ar iepriekšējo rādījumu.</li>
+                    <li>Ja skaitītājs ir apgriezies uz nulli, lūdzu, sazinieties ar pārvaldnieku.</li>
+                    <li>Rādījumam jābūt skaitlim ar ne vairāk kā divām decimālzīmēm.</li>
+                    <li>Ja Jums ir problēmas ar skaitītāju nolasīšanu, lūdzu, sazinieties ar pārvaldnieku.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

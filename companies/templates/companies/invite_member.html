@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Uzaicināt dalībnieku - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_members' company.slug %}">Dalībnieki</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Uzaicināt</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Uzaicināt jaunu dalībnieku</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'companies_tenant:company_members' company.slug %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz dalībnieku sarakstu
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Uzaicinājuma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">E-pasta adrese *</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                    {% if form.email.help_text %}
+                                        <div class="form-text">{{ form.email.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">Loma uzņēmumā *</label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                        <div class="text-danger">{{ form.role.errors }}</div>
+                                    {% endif %}
+                                    {% if form.role.help_text %}
+                                        <div class="form-text">{{ form.role.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="alert alert-info mb-4">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="bi bi-info-circle-fill fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Par uzaicinājuma nosūtīšanu</h5>
+                                            <p class="mb-0">
+                                                Uzaicinājums tiks nosūtīts uz norādīto e-pasta adresi. Ja lietotājs jau ir reģistrēts sistēmā, 
+                                                viņš varēs uzreiz pievienoties uzņēmumam. Ja nē, tad vispirms būs jāreģistrējas.
+                                                Uzaicinājums ir derīgs 7 dienas.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'companies_tenant:company_members' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-envelope"></i> Nosūtīt uzaicinājumu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

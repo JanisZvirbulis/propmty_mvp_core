@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uzaicinājums pievienoties uzņēmumam</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #0d6efd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Uzaicinājums pievienoties uzņēmumam</h1>
+        </div>
+        <div class="content">
+            <p>Labdien!</p>
+            
+            <p>Jūs esat uzaicināts pievienoties uzņēmumam <strong>{{ invitation.company.name }}</strong> kā dalībnieks platformā Propmty.</p>
+            
+            <div class="info">
+                <p><strong>Uzņēmums:</strong> {{ invitation.company.name }}</p>
+                <p><strong>Loma:</strong> 
+                    {% if invitation.role == 'ADMIN' %}
+                    Administrators
+                    {% elif invitation.role == 'MANAGER' %}
+                    Menedžeris
+                    {% else %}
+                    Dalībnieks
+                    {% endif %}
+                </p>
+                <p><strong>Uzaicinājuma derīguma termiņš:</strong> {{ expires_at|date:"d.m.Y H:i" }}</p>
+            </div>
+            
+            <p>Lai pieņemtu uzaicinājumu, lūdzu, noklikšķiniet uz zemāk redzamās pogas:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ invitation_url }}" class="button">Pieņemt uzaicinājumu</a>
+            </div>
+            
+            <p>Ja poga nedarbojas, jūs varat kopēt un ielīmēt šo saiti savā pārlūkprogrammā:</p>
+            <p style="word-break: break-all;">{{ invitation_url }}</p>
+            
+            <p>Ja jūs jau esat reģistrēts Propmty platformā, varēsiet uzreiz pievienoties uzņēmumam. Ja nē, jums būs jāizveido jauns konts.</p>
+            
+            <p>Paldies,<br>Propmty komanda</p>
+        </div>
+        <div class="footer">
+            <p>Šī e-pasta saturs ir konfidenciāls un paredzēts tikai adresātam. Ja jūs esat to saņēmis kļūdas dēļ, lūdzu, sazinieties ar sūtītāju un izdzēsiet šo e-pastu.</p>
+        </div>
+    </div>
+</body>
+</html>

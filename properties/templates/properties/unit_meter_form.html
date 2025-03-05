@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if action == 'Add' %}Pievienot skaitītāju{% else %}Rediģēt skaitītāju{% endif %} - {{ unit.unit_number }} - {{ property.address }} - {{ company.name }} - Propmty
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}">{{ unit.unit_number }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}">Skaitītāji</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            {% if action == 'Add' %}Pievienot skaitītāju{% else %}Rediģēt skaitītāju{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% if action == 'Add' %}
+                        Pievienot jaunu skaitītāju
+                    {% else %}
+                        Rediģēt skaitītāju
+                    {% endif %}
+                </h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="card shadow">
+                        <div class="card-body p-4">
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2">Telpas informācija</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Adrese:</dt>
+                                            <dd class="col-sm-8">{{ property.address }}</dd>
+                                            
+                                            <dt class="col-sm-4">Telpa:</dt>
+                                            <dd class="col-sm-8">{{ unit.unit_number }}</dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Tips:</dt>
+                                            <dd class="col-sm-8">{{ unit.get_unit_type_display }}</dd>
+                                            
+                                            <dt class="col-sm-4">Platība:</dt>
+                                            <dd class="col-sm-8">{{ unit.area }} m²</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-4">
+                                    <h5 class="border-bottom pb-2">Skaitītāja informācija</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.meter_type.id_for_label }}" class="form-label">Skaitītāja veids *</label>
+                                            {{ form.meter_type }}
+                                            {% if form.meter_type.errors %}
+                                                <div class="text-danger">{{ form.meter_type.errors }}</div>
+                                            {% endif %}
+                                            {% if form.meter_type.help_text %}
+                                                <div class="form-text">{{ form.meter_type.help_text }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.meter_number.id_for_label }}" class="form-label">Skaitītāja numurs *</label>
+                                            {{ form.meter_number }}
+                                            {% if form.meter_number.errors %}
+                                                <div class="text-danger">{{ form.meter_number.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.status.id_for_label }}" class="form-label">Statuss *</label>
+                                            {{ form.status }}
+                                            {% if form.status.errors %}
+                                                <div class="text-danger">{{ form.status.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.expire_date.id_for_label }}" class="form-label">Derīguma termiņš</label>
+                                            {{ form.expire_date }}
+                                            {% if form.expire_date.errors %}
+                                                <div class="text-danger">{{ form.expire_date.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Datums, kad skaitītājam beidzas derīguma termiņš</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.notes.id_for_label }}" class="form-label">Piezīmes</label>
+                                        {{ form.notes }}
+                                        {% if form.notes.errors %}
+                                            <div class="text-danger">{{ form.notes.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atgriezties
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if action == 'Add' %}
+                                            <i class="bi bi-plus-circle"></i> Pievienot skaitītāju
+                                        {% else %}
+                                            <i class="bi bi-check2"></i> Saglabāt izmaiņas
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

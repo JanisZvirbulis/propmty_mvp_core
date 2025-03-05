@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .property-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome to Your New Home!</h2>
+        
+        <p>You've been invited to rent a property through Propmty.</p>
+        
+        <div class="property-details">
+            <h3>{{ invitation.lease.unit.property.address }}</h3>
+            <p>
+                Unit: {{ invitation.lease.unit.unit_number }}<br>
+                Type: {{ invitation.lease.unit.get_unit_type_display }}<br>
+                Area: {{ invitation.lease.unit.area }}m²<br>
+                Rooms: {{ invitation.lease.unit.rooms }}
+            </p>
+            <p>
+                <strong>Monthly Rent:</strong> €{{ invitation.lease.rent_amount }}<br>
+                <strong>Lease Period:</strong> {{ invitation.lease.start_date|date:"M d, Y" }} - {{ invitation.lease.end_date|date:"M d, Y" }}
+            </p>
+        </div>
+
+        <p>To proceed with the rental agreement, please click the button below to create your account:</p>
+        
+        <p style="text-align: center;">
+            <a href="{{ invitation_url }}" class="button">Accept Invitation</a>
+        </p>
+        
+        <p><small>This invitation expires on {{ expires_at|date:"M d, Y H:i" }}</small></p>
+        
+        <p>If you have any questions, please contact the property manager.</p>
+    </div>
+</body>
+</html>

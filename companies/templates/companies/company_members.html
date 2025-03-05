@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Uzņēmuma dalībnieki - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Uzņēmuma dalībnieki</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if company.can_add_member %}
+                    <a href="{% url 'companies_tenant:invite_member' company.slug %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-2"></i> Uzaicināt dalībnieku
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Aktīvie dalībnieki -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Aktīvie dalībnieki</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Vārds, uzvārds</th>
+                                    <th>E-pasts</th>
+                                    <th>Loma</th>
+                                    <th>Pievienošanās datums</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Īpašnieks -->
+                                <tr>
+                                    <td>{{ company.owner.get_full_name }}</td>
+                                    <td>{{ company.owner.email }}</td>
+                                    <td><span class="badge bg-success">Īpašnieks</span></td>
+                                    <td>{{ company.created_at|date:"d.m.Y" }}</td>
+                                    <td>-</td>
+                                </tr>
+                                
+                                <!-- Dalībnieki -->
+                                {% for member in members %}
+                                <tr>
+                                    <td>{{ member.user.get_full_name }}</td>
+                                    <td>{{ member.user.email }}</td>
+                                    <td>
+                                        {% if member.role == 'ADMIN' %}
+                                        <span class="badge bg-primary">Administrators</span>
+                                        {% elif member.role == 'MANAGER' %}
+                                        <span class="badge bg-info">Menedžeris</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Dalībnieks</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ member.created_at|date:"d.m.Y" }}</td>
+                                    <td>
+                                        {% if member.user != company.owner and request.user == company.owner %}
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'companies_tenant:change_member_role' company.slug member.id %}" class="btn btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> Mainīt lomu
+                                            </a>
+                                            <a href="{% url 'companies_tenant:remove_member' company.slug member.id %}" class="btn btn-outline-danger">
+                                                <i class="bi bi-person-x"></i> Noņemt
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gaidošie uzaicinājumi -->
+            {% if pending_invitations %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Gaidošie uzaicinājumi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>E-pasts</th>
+                                    <th>Loma</th>
+                                    <th>Nosūtīts</th>
+                                    <th>Beigu termiņš</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invitation in pending_invitations %}
+                                <tr>
+                                    <td>{{ invitation.email }}</td>
+                                    <td>
+                                        {% if invitation.role == 'ADMIN' %}
+                                        <span class="badge bg-primary">Administrators</span>
+                                        {% elif invitation.role == 'MANAGER' %}
+                                        <span class="badge bg-info">Menedžeris</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Dalībnieks</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ invitation.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ invitation.expires_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'companies_tenant:cancel_invitation' company.slug invitation.id %}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-x-circle"></i> Atcelt
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Abonementu informācija -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dalībnieku limits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6>Jūsu pašreizējais abonements: <span class="badge bg-info">{{ company.subscription.plan.name }}</span></h6>
+                            <p>Jūsu abonements ļauj pievienot līdz {{ company.subscription.plan.max_users }} dalībniekiem.</p>
+                            
+                            {% if not company.can_add_member %}
+                            {{company.can_add_member}}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i> Jūs esat sasnieguši maksimālo dalībnieku skaitu. Lai pievienotu vairāk dalībniekus, lūdzu, atjauniniet savu abonementu.
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="progress" style="height: 30px;">
+                                {% with member_count=members.count|add:1 %}
+                                <div class="progress-bar progress-bar-striped {% if member_count >= company.subscription.plan.max_users %}bg-danger{% else %}bg-success{% endif %}" 
+                                     role="progressbar" style="width: {{ member_count|divisibleby:company.subscription.plan.max_users|floatformat:2 }}%" 
+                                     aria-valuenow="{{ member_count }}" aria-valuemin="0" aria-valuemax="{{ company.subscription.plan.max_users }}">
+                                    {{ member_count }} / {{ company.subscription.plan.max_users }} dalībnieki
+                                </div>
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

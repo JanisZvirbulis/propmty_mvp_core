@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Īres līguma uzaicinājums - Propmty{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/images/logo.png' %}" alt="Propmty Logo" class="img-fluid mb-4" style="max-height: 80px;">
+                        <h2 class="mb-3">Pieņemt uzaicinājumu kā īrnieks</h2>
+                        <p class="lead text-muted">
+                            Jūs jau esat pieteicies sistēmā kā <strong>{{ request.user.get_full_name }}</strong> ({{ request.user.email }})
+                        </p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Īres īpašuma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Adrese:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.property.address|capfirst }}</dd>
+                                        
+                                        <dt class="col-sm-5">Dzīvoklis/Telpa:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-5">Platība:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.area }} m²</dd>
+                                    </dl>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Īres maksa:</dt>
+                                        <dd class="col-sm-7">{{ lease.rent_amount }} €/mēnesī</dd>
+                                        
+                                        <dt class="col-sm-5">Termiņš:</dt>
+                                        <dd class="col-sm-7">{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-5">Depozīts:</dt>
+                                        <dd class="col-sm-7">{{ lease.security_deposit }} €</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-info-circle-fill fs-3"></i>
+                            </div>
+                            <div>
+                                <h5>Izmantot pašreizējo kontu?</h5>
+                                <p class="mb-0">
+                                    Jūs varat pieņemt šo uzaicinājumu, izmantojot savu pašreizējo kontu. 
+                                    Ja vēlaties izveidot jaunu kontu, lūdzu, vispirms izrakstieties no sistēmas.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'users:logout' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-box-arrow-right me-2"></i> Izrakstīties un reģistrēties no jauna
+                        </a>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accept_with_current" value="yes">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i> Pieņemt ar pašreizējo kontu
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

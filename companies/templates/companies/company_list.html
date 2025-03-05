@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mani uzņēmumi - Propmty{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mani uzņēmumi</h1>
+        
+        {% if request.user.role == 'company_owner' %}
+        <a href="{% url 'companies_public:company_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Izveidot jaunu uzņēmumu
+        </a>
+        {% endif %}
+    </div>
+    
+    {% if owned_companies %}
+    <div class="mb-5">
+        <h3>Uzņēmumi, kur esmu īpašnieks</h3>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for company in owned_companies %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">{{ company.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if company.address %}
+                        <p class="mb-2"><i class="bi bi-geo-alt"></i> {{ company.address }}</p>
+                        {% endif %}
+                        
+                        {% if company.email %}
+                        <p class="mb-2"><i class="bi bi-envelope"></i> {{ company.email }}</p>
+                        {% endif %}
+                        
+                        {% if company.phone %}
+                        <p class="mb-2"><i class="bi bi-telephone"></i> {{ company.phone }}</p>
+                        {% endif %}
+                        
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Izveidots: {{ company.created_at|date:"d.m.Y" }}</small>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'companies_tenant:company_detail' company.slug %}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye"></i> Skatīt
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if member_companies %}
+    <div>
+        <h3>Uzņēmumi, kur esmu dalībnieks</h3>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for company in member_companies %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">{{ company.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if company.address %}
+                        <p class="mb-2"><i class="bi bi-geo-alt"></i> {{ company.address }}</p>
+                        {% endif %}
+                        
+                        <p class="mb-2"><i class="bi bi-person"></i> Īpašnieks: {{ company.owner.get_full_name }}</p>
+                        
+                        {% with role=company.members.get.get_role_display %}
+                        <p class="mb-2"><i class="bi bi-award"></i> Jūsu loma: {{ role }}</p>
+                        {% endwith %}
+                        
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Pievienots: {{ company.members.get.created_at|date:"d.m.Y" }}</small>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'companies_tenant:company_detail' company.slug %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-eye"></i> Skatīt
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not owned_companies and not member_companies %}
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-building fs-1 text-muted"></i>
+        </div>
+        <h3>Jums vēl nav uzņēmumu</h3>
+        {% if request.user.role == 'company_owner' %}
+        <p>Sāciet darbību, izveidojot jaunu uzņēmumu!</p>
+        <a href="{% url 'companies_public:company_create' %}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-circle"></i> Izveidot uzņēmumu
+        </a>
+        {% else %}
+        <p>Gaidiet, līdz kāds uzņēmuma īpašnieks uzaicinās jūs pievienoties.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

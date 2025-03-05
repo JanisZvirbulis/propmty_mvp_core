@@ -1,0 +1,107 @@
+<!-- templates/partials/footer.html -->
+{% load static %}
+<footer class="footer py-5 mt-auto bg-dark text-light">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-lg-4 col-md-6">
+                <h5 class="text-primary mb-3">About Propmty</h5>
+                <p class="">
+                    Efficient property management solution for real estate owners and managers. 
+                    Streamline your operations, manage tenants, and track maintenance all in one place.
+                </p>
+                <div class="mt-4">
+                    <a href="#" class="social-icon me-2">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a href="#" class="social-icon me-2">
+                        <i class="bi bi-twitter"></i>
+                    </a>
+                    <a href="#" class="social-icon me-2">
+                        <i class="bi bi-linkedin"></i>
+                    </a>
+                    <a href="#" class="social-icon">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-6">
+                <h5 class="text-primary mb-3">Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{% url 'users:home' %}" class="footer-link">Home</a>
+                    </li>
+                    {% comment %} {% if user.is_authenticated %}
+                        <li class="mb-2">
+                            <a href="{% url 'properties:property_list' %}" class="footer-link">Properties</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'users:profile' %}" class="footer-link">Profile</a>
+                        </li>
+                    {% else %}
+                        <li class="mb-2">
+                            <a href="{% url 'users:login' %}" class="footer-link">Login</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'users:register' %}" class="footer-link">Register</a>
+                        </li>
+                    {% endif %} {% endcomment %}
+                </ul>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <h5 class="text-primary mb-3">Contact</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        123 Property Street, Riga, LV-1001
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-envelope me-2"></i>
+                        info@propmty.com
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-telephone me-2"></i>
+                        +371 20123456
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <h5 class="text-primary mb-3">Newsletter</h5>
+                <p class="">Subscribe to our newsletter for updates and tips.</p>
+                <form class="mt-3">
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Enter your email">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <hr class="my-4 border-secondary">
+        
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="mb-0">
+                    &copy; {% now "Y" %} Propmty. All rights reserved.
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                <ul class="list-inline mb-0">
+                    <li class="list-inline-item">
+                        <a href="#" class="footer-link">Terms</a>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                        <a href="#" class="footer-link">Privacy</a>
+                    </li>
+                    <li class="list-inline-item">
+                        <a href="#" class="footer-link">FAQ</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>

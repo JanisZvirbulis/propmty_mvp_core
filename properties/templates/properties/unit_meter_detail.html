@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ meter.get_meter_type_display }} skaitītājs - {{ unit.unit_number }} - {{ property.address }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}">{{ unit.unit_number }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}">Skaitītāji</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ meter.get_meter_type_display }}</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">{{ meter.get_meter_type_display }} skaitītājs</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz skaitītājiem
+                        </a>
+                        
+                        {% if meter.status == 'active' %}
+                        <a href="{% url 'properties:unit_meter_edit' company.slug property.id unit.id meter.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Rediģēt
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    {% if meter.status == 'active' %}
+                    <a href="{% url 'properties:meter_reading_add' company.slug property.id unit.id meter.id %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Pievienot rādījumu
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Skaitītāja informācija -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header {% if meter.status == 'active' %}bg-primary{% else %}bg-secondary{% endif %} text-white">
+                            <h5 class="mb-0">Skaitītāja informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Veids:</dt>
+                                <dd class="col-sm-8">{{ meter.get_meter_type_display }}</dd>
+                                
+                                <dt class="col-sm-4">Numurs:</dt>
+                                <dd class="col-sm-8">{{ meter.meter_number }}</dd>
+                                
+                                <dt class="col-sm-4">Statuss:</dt>
+                                <dd class="col-sm-8">
+                                    {% if meter.status == 'active' %}
+                                    <span class="badge bg-success">{{ meter.get_status_display }}</span>
+                                    {% elif meter.status == 'inactive' %}
+                                    <span class="badge bg-secondary">{{ meter.get_status_display }}</span>
+                                    {% elif meter.status == 'expired' %}
+                                    <span class="badge bg-warning">{{ meter.get_status_display }}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Derīguma termiņš:</dt>
+                                <dd class="col-sm-8">{% if meter.expire_date %}{{ meter.expire_date|date:"d.m.Y" }}{% else %}-{% endif %}</dd>
+                                
+                                {% if meter.notes %}
+                                <dt class="col-sm-4">Piezīmes:</dt>
+                                <dd class="col-sm-8">{{ meter.notes }}</dd>
+                                {% endif %}
+                                
+                                <dt class="col-sm-4">Pievienots:</dt>
+                                <dd class="col-sm-8">{{ meter.created_at|date:"d.m.Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Atjaunināts:</dt>
+                                <dd class="col-sm-8">{{ meter.updated_at|date:"d.m.Y H:i" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pēdējie rādījumi -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Pēdējie rādījumi</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if readings %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Datums</th>
+                                            <th>Rādījums</th>
+                                            <th>Patēriņš</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for reading in readings|slice:":5" %}
+                                        <tr>
+                                            <td>{{ reading.reading_date|date:"d.m.Y" }}</td>
+                                            <td>{{ reading.reading }}</td>
+                                            <td>
+                                                {% if reading.consumption != None %}
+                                                {{ reading.consumption }}
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-clipboard-data fs-3 text-muted"></i>
+                                </div>
+                                <p class="text-muted mb-2">Nav pievienotu rādījumu</p>
+                                
+                                {% if meter.status == 'active' %}
+                                <a href="{% url 'properties:meter_reading_add' company.slug property.id unit.id meter.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-plus-circle"></i> Pievienot rādījumu
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rādījumu saraksts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Visi rādījumi</h5>
+                    
+                    <!-- Filtri -->
+                    <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                        <i class="bi bi-funnel"></i> Filtri
+                    </button>
+                </div>
+                
+                <!-- Filtru sadaļa -->
+                <div class="collapse" id="filterCollapse">
+                    <div class="card-body bg-light border-bottom">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Datums no</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Datums līdz</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Verificēts</label>
+                                <select name="verification" class="form-select">
+                                    <option value="">Visi</option>
+                                    <option value="verified" {% if filters.verification == 'verified' %}selected{% endif %}>Verificēti</option>
+                                    <option value="unverified" {% if filters.verification == 'unverified' %}selected{% endif %}>Neverificēti</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Kārtošana</label>
+                                <select name="sort" class="form-select">
+                                    <option value="-reading_date" {% if filters.sort == '-reading_date' %}selected{% endif %}>Jaunākie vispirms</option>
+                                    <option value="reading_date" {% if filters.sort == 'reading_date' %}selected{% endif %}>Vecākie vispirms</option>
+                                    <option value="-reading" {% if filters.sort == '-reading' %}selected{% endif %}>Lielākie vispirms</option>
+                                    <option value="reading" {% if filters.sort == 'reading' %}selected{% endif %}>Mazākie vispirms</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12 text-end">
+                                <a href="{% url 'properties:unit_meter_detail' company.slug property.id unit.id meter.id %}" class="btn btn-secondary me-2">Atcelt</a>
+                                <button type="submit" class="btn btn-primary">Filtrēt</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    {% if readings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Datums</th>
+                                    <th>Rādījums</th>
+                                    <th>Patēriņš</th>
+                                    <th>Iesniedzējs</th>
+                                    <th>Statuss</th>
+                                    <th>Piezīmes</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reading in readings %}
+                                <tr>
+                                    <td>{{ reading.reading_date|date:"d.m.Y" }}</td>
+                                    <td>{{ reading.reading }}</td>
+                                    <td>
+                                        {% if reading.consumption != None %}
+                                        {{ reading.consumption }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ reading.submitted_by.get_full_name }}</td>
+                                    <td>
+                                        {% if reading.is_verified %}
+                                        <span class="badge bg-success">Verificēts</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Nav verificēts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ reading.notes|default:"-"|truncatechars:30 }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if not reading.is_verified %}
+                                            <form method="post" action="{% url 'properties:verify_meter_reading' company.slug reading.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-success" title="Verificēt">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            
+                                            <a href="{% url 'properties:meter_reading_delete' company.slug property.id unit.id meter.id reading.id %}" class="btn btn-outline-danger" title="Dzēst">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-clipboard-data fs-3 text-muted"></i>
+                        </div>
+                        <h5>Nav rādījumu</h5>
+                        <p class="text-muted">Šim skaitītājam nav pievienoti rādījumi.</p>
+                        
+                        {% if meter.status == 'active' %}
+                        <a href="{% url 'properties:meter_reading_add' company.slug property.id unit.id meter.id %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Pievienot rādījumu
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

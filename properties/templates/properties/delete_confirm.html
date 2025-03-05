@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dzēst {{ object_name }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Dzēst {{ object_name }}</h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-body p-4 text-center">
+                            <div class="my-4">
+                                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+                            </div>
+                            
+                            <h3 class="mb-3">Vai tiešām vēlaties dzēst?</h3>
+                            <p>{{ warning_message }}</p>
+                            
+                            <form method="post" class="mt-4">
+                                {% csrf_token %}
+                                
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="{{ back_url }}" class="btn btn-lg btn-secondary">
+                                        <i class="bi bi-x-circle me-2"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-lg btn-danger">
+                                        <i class="bi bi-trash me-2"></i> Dzēst
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

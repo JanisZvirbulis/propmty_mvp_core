@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Īres līguma uzaicinājums - Propmty{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/images/logo.png' %}" alt="Propmty Logo" class="img-fluid mb-4" style="max-height: 80px;">
+                        <h2 class="mb-3">Jūs esat uzaicināts kā īrnieks</h2>
+                        <p class="lead text-muted">{{ invitation.lease.company.name }} uzaicina jūs pievienoties platformai Propmty un kļūt par īrnieku</p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Īres īpašuma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Adrese:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.property.address }}</dd>
+                                        
+                                        <dt class="col-sm-5">Dzīvoklis/Telpa:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-5">Platība:</dt>
+                                        <dd class="col-sm-7">{{ lease.unit.area }} m²</dd>
+                                    </dl>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Īres maksa:</dt>
+                                        <dd class="col-sm-7">{{ lease.rent_amount }} €/mēnesī</dd>
+                                        
+                                        <dt class="col-sm-5">Termiņš:</dt>
+                                        <dd class="col-sm-7">{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-5">Depozīts:</dt>
+                                        <dd class="col-sm-7">{{ lease.security_deposit }} €</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-info-circle-fill fs-3"></i>
+                            </div>
+                            <div>
+                                <h5>Kas tālāk?</h5>
+                                <p class="mb-0">Lai pieņemtu uzaicinājumu, jums ir jāizveido konts mūsu platformā. Pēc reģistrācijas jūs varēsiet:
+                                <ul>
+                                    <li>Pārskatīt savu īres līgumu</li>
+                                    <li>Iesniegt skaitītāju rādījumus</li>
+                                    <li>Apmaksāt rēķinus</li>
+                                    <li>Pieteikt remontus un sazināties ar pārvaldnieku</li>
+                                </ul>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted mb-3">Šis uzaicinājums ir spēkā līdz: {{ invitation.expires_at|date:"d.m.Y H:i" }}</p>
+                        <a href="{% url 'tenant_portal:tenant_register' token=invitation.invitation_token %}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus me-2"></i> Reģistrēties un pieņemt uzaicinājumu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

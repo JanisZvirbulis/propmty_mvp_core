@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dzēst telpu - {{ unit.unit_number }} - {{ property.address }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address|capfirst }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Dzēst telpu</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Dzēst telpu: {{ unit.unit_number|capfirst }}</h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                                </div>
+                                <h4>Vai tiešām vēlaties dzēst šo telpu?</h4>
+                                <p class="text-muted">Šī darbība ir neatgriezeniska. Tiks dzēsti visi ar telpu saistītie dati, tostarp skaitītāji un rādījumi.</p>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">Telpas informācija</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Īpašums:</strong> {{ property.address }}</li>
+                                        <li><strong>Telpas nr.:</strong> {{ unit.unit_number }}</li>
+                                        <li><strong>Stāvs:</strong> {{ unit.floor }}</li>
+                                        <li><strong>Veids:</strong> {{ unit.get_unit_type_display }}</li>
+                                        <li><strong>Platība:</strong> {{ unit.area }} m²</li>
+                                        <li><strong>Statuss:</strong> {{ unit.get_status_display }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="confirm_delete" value="yes">
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash"></i> Dzēst telpu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

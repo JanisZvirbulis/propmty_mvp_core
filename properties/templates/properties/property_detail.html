@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ property.address }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="/{{ company.slug }}/properties/">Īpašumi</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ property.address|capfirst }}</li>
+                    </ol>
+                </nav>
+            </div>
+        
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">{{ property.address|capfirst }}</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                    <div class="btn-group me-2">
+                        <a href="{% url 'properties:property_edit' company.slug property.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Rediģēt
+                        </a>
+                        <a href="{% url 'properties:property_delete' company.slug property.id %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Dzēst
+                        </a>
+                        {% if units|length <  company.subscription.plan.max_units %}
+                            <a href="{% url 'properties:unit_create' company.slug property.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> Pievienot telpu
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Īpašuma informācija -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Īpašuma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Adrese:</dt>
+                                        <dd class="col-sm-7">{{ property.address|capfirst }}</dd>
+                                        
+                                        <dt class="col-sm-5">Ēkas tips:</dt>
+                                        <dd class="col-sm-7">{{ property.get_building_type_display }}</dd>
+                                        
+                                        <dt class="col-sm-5">Kopējā platība:</dt>
+                                        <dd class="col-sm-7">{{ property.total_area }} m²</dd>
+                                        
+                                        <dt class="col-sm-5">Stāvu skaits:</dt>
+                                        <dd class="col-sm-7">{{ property.floor_count }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        {% if property.year_built %}
+                                        <dt class="col-sm-5">Būvēts:</dt>
+                                        <dd class="col-sm-7">{{ property.year_built }}. gadā</dd>
+                                        {% endif %}
+                                        
+                                        {% if property.cadastral_number %}
+                                        <dt class="col-sm-5">Kadastra nr.:</dt>
+                                        <dd class="col-sm-7">{{ property.cadastral_number }}</dd>
+                                        {% endif %}
+                                        
+                                        <dt class="col-sm-5">Pievienots:</dt>
+                                        <dd class="col-sm-7">{{ property.created_at|date:"d.m.Y" }}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            <h6 class="border-bottom pb-2 mt-4 mb-3">Īpašumam pieejamie skaitītāji</h6>
+                            <div class="d-flex flex-wrap">
+                                <div class="me-4 mb-3">
+                                    <span class="badge rounded-pill {% if property.has_building_water_meter %}bg-primary{% else %}bg-secondary{% endif %} p-2">
+                                        <i class="bi bi-droplet me-1"></i> Ūdens skaitītājs
+                                    </span>
+                                </div>
+                                <div class="me-4 mb-3">
+                                    <span class="badge rounded-pill {% if property.has_building_gas_meter %}bg-primary{% else %}bg-secondary{% endif %} p-2">
+                                        <i class="bi bi-fire me-1"></i> Gāzes skaitītājs
+                                    </span>
+                                </div>
+                                <div class="me-4 mb-3">
+                                    <span class="badge rounded-pill {% if property.has_building_electricity_meter %}bg-primary{% else %}bg-secondary{% endif %} p-2">
+                                        <i class="bi bi-lightning-charge me-1"></i> Elektrības skaitītājs
+                                    </span>
+                                </div>
+                                <div class="me-4 mb-3">
+                                    <span class="badge rounded-pill {% if property.has_building_heating_meter %}bg-primary{% else %}bg-secondary{% endif %} p-2">
+                                        <i class="bi bi-thermometer-half me-1"></i> Siltuma skaitītājs
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Telpu pārskats {{total_units}} / {{company.subscription.plan.max_units}}</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Statistikas aplis -->
+                            <div class="text-center mb-4">
+                                <div style="position: relative; width: 160px; height: 160px; margin: 0 auto;">
+                                    <canvas id="unitStatusChart" width="160" height="160"></canvas>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                        <h3 class="mb-0">{{ total_units }}</h3>
+                                        <small class="text-muted">Telpas kopā</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Statistikas detaļas -->
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span><i class="bi bi-circle-fill text-success me-2"></i> Brīvas</span>
+                                    <span class="badge bg-success rounded-pill">{{ available_units }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span><i class="bi bi-circle-fill text-danger me-2"></i> Izīrētas</span>
+                                    <span class="badge bg-danger rounded-pill">{{ rented_units }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span><i class="bi bi-circle-fill text-warning me-2"></i> Rezervētas</span>
+                                    <span class="badge bg-warning rounded-pill">{{ reserved_units }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-circle-fill text-secondary me-2"></i> Remontā</span>
+                                    <span class="badge bg-secondary rounded-pill">{{ maintenance_units }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if total_units > 0 %}
+                            <hr>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-bold">Kopējā platība:</span>
+                                    <span>{{ total_area|floatformat:2 }} m²</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">Vidējā platība:</span>
+                                    <span>{{ average_area|floatformat:2 }} m²</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Telpu saraksts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Telpas un dzīvokļi</h5>
+                    
+                    {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                        {% if units|length <  company.subscription.plan.max_units %}
+                            <a href="{% url 'properties:unit_create' company.slug property.id %}" class="btn btn-sm btn-outline-light">
+                                <i class="bi bi-plus-circle"></i> Pievienot telpu
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if units %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nr.</th>
+                                    <th>Stāvs</th>
+                                    <th>Tips</th>
+                                    <th>Platība</th>
+                                    <th>Istabas</th>
+                                    <th>Statuss</th>
+                                    <th>Skaitītāji</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for unit in units %}
+                                <tr>
+                                    <td>{{ unit.unit_number }}</td>
+                                    <td>{{ unit.floor }}</td>
+                                    <td>{{ unit.get_unit_type_display }}</td>
+                                    <td>{{ unit.area }} m²</td>
+                                    <td>{{ unit.rooms }}</td>
+                                    <td>
+                                        {% if unit.status == 'available' %}
+                                        <span class="badge bg-success">Brīvs</span>
+                                        {% elif unit.status == 'rented' %}
+                                        <span class="badge bg-danger">Izīrēts</span>
+                                        {% elif unit.status == 'maintenance' %}
+                                        <span class="badge bg-secondary">Remontā</span>
+                                        {% elif unit.status == 'reserved' %}
+                                        <span class="badge bg-warning">Rezervēts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            {% if unit.has_water_meter %}
+                                            <span class="badge bg-primary" title="Ūdens skaitītājs">
+                                                <i class="bi bi-droplet"></i>
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if unit.has_gas_meter %}
+                                            <span class="badge bg-primary" title="Gāzes skaitītājs">
+                                                <i class="bi bi-fire"></i>
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if unit.has_electricity_meter %}
+                                            <span class="badge bg-primary" title="Elektrības skaitītājs">
+                                                <i class="bi bi-lightning-charge"></i>
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if unit.has_heating_meter %}
+                                            <span class="badge bg-primary" title="Siltuma skaitītājs">
+                                                <i class="bi bi-thermometer-half"></i>
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'properties:unit_edit' company.slug property.id unit.id %}" class="btn btn-outline-secondary" title="Rediģēt">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'properties:unit_delete' company.slug property.id unit.id %}" class="btn btn-outline-danger" title="Dzēst">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-house fs-1 text-muted"></i>
+                        </div>
+                        <h4>Nav pievienotu telpu</h4>
+                        <p class="text-muted">Pievienojiet telpas un dzīvokļus, lai tos efektīvi pārvaldītu</p>
+                        
+                        {% if request.is_company_owner or request.is_company_admin or request.is_company_manager %}
+                        <a href="{% url 'properties:unit_create' company.slug property.id %}" class="btn btn-primary mt-2">
+                            <i class="bi bi-plus-circle"></i> Pievienot pirmo telpu
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Chart.js skripts statusu diagrammai -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('unitStatusChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Brīvas', 'Izīrētas', 'Rezervētas', 'Remontā'],
+                datasets: [{
+                    data: [{{ available_units }}, {{ rented_units }}, {{ reserved_units }}, {{ maintenance_units }}],
+                    backgroundColor: [
+                        '#28a745', // Zaļš - brīvas
+                        '#dc3545', // Sarkans - izīrētas
+                        '#ffc107', // Dzeltens - rezervētas
+                        '#6c757d'  // Pelēks - remontā
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        displayColors: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    });
+</script>
+{% endblock %}

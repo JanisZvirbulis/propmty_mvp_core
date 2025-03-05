@@ -1,0 +1,106 @@
+<!-- companies/templates/companies/change_member_role.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mainīt dalībnieka lomu - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_members' company.slug %}">Dalībnieki</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Mainīt lomu</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Mainīt dalībnieka lomu</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">Dalībnieka informācija</h5>
+                                <dl class="row">
+                                    <dt class="col-sm-3">Vārds, uzvārds:</dt>
+                                    <dd class="col-sm-9">{{ member.user.get_full_name }}</dd>
+                                    
+                                    <dt class="col-sm-3">E-pasts:</dt>
+                                    <dd class="col-sm-9">{{ member.user.email }}</dd>
+                                    
+                                    <dt class="col-sm-3">Pašreizējā loma:</dt>
+                                    <dd class="col-sm-9">
+                                        {% if member.role == 'ADMIN' %}
+                                        <span class="badge bg-primary">Administrators</span>
+                                        {% elif member.role == 'MANAGER' %}
+                                        <span class="badge bg-info">Menedžeris</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Dalībnieks</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-4">
+                                    <h5 class="border-bottom pb-2 mb-3">Jaunā loma</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.role.id_for_label }}" class="form-label">Loma *</label>
+                                        {{ form.role }}
+                                        {% if form.role.errors %}
+                                            <div class="text-danger">{{ form.role.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Administratori var pievienot un noņemt dalībniekus.
+                                            Menedžeri var pārvaldīt īpašumus un līgumus.
+                                            Dalībnieki var tikai skatīt datus.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info mb-4">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="bi bi-info-circle-fill fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Par lomu maiņu</h5>
+                                            <p class="mb-0">
+                                                Mainot dalībnieka lomu, jūs maināt viņa piekļuves līmeni uzņēmuma datiem un iespējām.
+                                                Administratoriem ir pilnas piekļuves tiesības (izņemot dažas darbības, kas pieejamas tikai īpašniekam).
+                                                Pārliecinieties, ka dalībniekam piešķirat atbilstošu lomu.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'companies_tenant:company_members' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check2"></i> Saglabāt izmaiņas
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

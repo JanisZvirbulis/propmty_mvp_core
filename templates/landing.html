@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Hero Section -->
+<section class="bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Efektīva īpašumu pārvaldība vienuviet</h1>
+                <p class="lead mb-4">Automatizējiet īres, komunālo maksājumu un īpašumu apsekošanas procesus ar mūsu viedo platformu</p>
+                <div class="d-flex gap-3">
+                    <a href="" class="btn btn-light btn-lg px-4">Sākt bezmaksas</a>
+                    <a href="#features" class="btn btn-outline-light btn-lg px-4">Uzzināt vairāk</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="{% static 'assets/images/background.JPG' %}" alt="Property Management" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5" id="features">
+    <div class="container">
+        <h2 class="text-center mb-5">Galvenās priekšrocības</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-building fs-1 text-primary"></i>
+                        </div>
+                        <h4>Īpašumu pārvaldība</h4>
+                        <p>Pārvaldiet visus savus īpašumus, dzīvokļus un telpas vienā platformā</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-cash-coin fs-1 text-primary"></i>
+                        </div>
+                        <h4>Automātiski rēķini</h4>
+                        <p>Automatizēta īres un komunālo maksājumu aprēķināšana un izsūtīšana</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-clipboard-check fs-1 text-primary"></i>
+                        </div>
+                        <h4>Apsekošanas sistēma</h4>
+                        <p>Vienkārša īpašumu apsekošana un defektu reģistrēšana</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How it Works -->
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Kā tas strādā?</h2>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-primary">1</div>
+                        <div class="timeline-content">
+                            <h4>Reģistrējieties un pievienojiet īpašumus</h4>
+                            <p>Izveidojiet kontu un pievienojiet savus īpašumus ar detalizētu informāciju</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-primary">2</div>
+                        <div class="timeline-content">
+                            <h4>Pārvaldiet īres līgumus</h4>
+                            <p>Veidojiet īres līgumus un pārvaldiet maksājumus</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-primary">3</div>
+                        <div class="timeline-content">
+                            <h4>Sekojiet līdzi apsekošanām</h4>
+                            <p>Plānojiet un veiciet regulāras apsekošanas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Cenrādis</h2>
+        <div class="row justify-content-center g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">Starter</h3>
+                        <div class="display-4 my-4">€0</div>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">Līdz 5 īpašumiem</li>
+                            <li class="mb-2">Pamata apsekošanas</li>
+                            <li class="mb-2">Īres līgumu pārvaldība</li>
+                        </ul>
+                        <a href="" class="btn btn-outline-primary">Sākt tagad</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">Professional</h3>
+                        <div class="display-4 my-4">€29</div>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">Neierobežoti īpašumi</li>
+                            <li class="mb-2">Detalizētas apsekošanas</li>
+                            <li class="mb-2">Automātiski rēķini</li>
+                        </ul>
+                        <a href="" class="btn btn-primary">Izvēlēties</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="bg-primary text-white text-center py-5">
+    <div class="container">
+        <h2 class="mb-4">Gatavs sākt?</h2>
+        <p class="lead mb-4">Pievienojieties simtiem īpašnieku, kas jau izmanto mūsu platformu</p>
+        <a href="{% url 'users:home' %}" class="btn btn-light btn-lg">Reģistrēties bez maksas</a>
+    </div>
+</section>
+
+{% include 'partials/footer.html' %}
+{% endblock %}

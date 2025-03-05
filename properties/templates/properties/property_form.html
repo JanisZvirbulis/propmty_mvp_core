@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if is_creating %}Pievienot īpašumu{% else %}Rediģēt īpašumu{% endif %} - {{ company.name }} - Propmty
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        {% if not is_creating %}
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Rediģēt</li>
+                        {% else %}
+                        <li class="breadcrumb-item active" aria-current="page">Pievienot īpašumu</li>
+                        {% endif %}
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% if is_creating %}
+                        Pievienot jaunu īpašumu
+                    {% else %}
+                        Rediģēt īpašumu: {{ property.address }}
+                    {% endif %}
+                </h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="card shadow">
+                        <div class="card-body p-4">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="{{ form.address.id_for_label }}" class="form-label">Adrese *</label>
+                                        {{ form.address }}
+                                        {% if form.address.errors %}
+                                            <div class="text-danger">{{ form.address.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Pilna īpašuma adrese</div>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.building_type.id_for_label }}" class="form-label">Ēkas tips *</label>
+                                        {{ form.building_type }}
+                                        {% if form.building_type.errors %}
+                                            <div class="text-danger">{{ form.building_type.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.total_area.id_for_label }}" class="form-label">Kopējā platība (m²) *</label>
+                                        {{ form.total_area }}
+                                        {% if form.total_area.errors %}
+                                            <div class="text-danger">{{ form.total_area.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.floor_count.id_for_label }}" class="form-label">Stāvu skaits *</label>
+                                        {{ form.floor_count }}
+                                        {% if form.floor_count.errors %}
+                                            <div class="text-danger">{{ form.floor_count.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.year_built.id_for_label }}" class="form-label">Būvniecības gads</label>
+                                        {{ form.year_built }}
+                                        {% if form.year_built.errors %}
+                                            <div class="text-danger">{{ form.year_built.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Atstājiet tukšu, ja nav zināms</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.cadastral_number.id_for_label }}" class="form-label">Kadastra numurs</label>
+                                    {{ form.cadastral_number }}
+                                    {% if form.cadastral_number.errors %}
+                                        <div class="text-danger">{{ form.cadastral_number.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h5 class="border-bottom pb-2">Ēkas skaitītāji</h5>
+                                    <p class="text-muted small mb-3">Atzīmējiet, kādi kopīgi skaitītāji ir visai ēkai</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_building_water_meter }}
+                                                <label class="form-check-label" for="{{ form.has_building_water_meter.id_for_label }}">
+                                                    <i class="bi bi-droplet"></i> Ūdens skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_building_gas_meter }}
+                                                <label class="form-check-label" for="{{ form.has_building_gas_meter.id_for_label }}">
+                                                    <i class="bi bi-fire"></i> Gāzes skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_building_electricity_meter }}
+                                                <label class="form-check-label" for="{{ form.has_building_electricity_meter.id_for_label }}">
+                                                    <i class="bi bi-lightning"></i> Elektrības skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_building_heating_meter }}
+                                                <label class="form-check-label" for="{{ form.has_building_heating_meter.id_for_label }}">
+                                                    <i class="bi bi-thermometer-half"></i> Siltuma skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    {% if is_creating %}
+                                    <a href="{% url 'properties:property_list' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atpakaļ
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atpakaļ
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if is_creating %}
+                                            <i class="bi bi-plus-circle"></i> Pievienot īpašumu
+                                        {% else %}
+                                            <i class="bi bi-check2"></i> Saglabāt izmaiņas
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ progress_percentage }}%;" 
+                             aria-valuenow="{{ current_properties_count }}" aria-valuemin="0" aria-valuemax="{{ max_properties }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

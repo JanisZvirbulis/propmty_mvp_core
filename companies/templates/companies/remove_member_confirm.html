@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Noņemt dalībnieku - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_members' company.slug %}">Dalībnieki</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Noņemt dalībnieku</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">Noņemt dalībnieku</h5>
+                        </div>
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                            </div>
+                            
+                            <h4 class="mb-3">Vai tiešām vēlaties noņemt dalībnieku?</h4>
+                            
+                            <p>Jūs gatavojaties noņemt <strong>{{ member.user.get_full_name }}</strong> ({{ member.user.email }}) no uzņēmuma <strong>{{ company.name }}</strong>.</p>
+                            
+                            <p class="text-muted">Šī darbība noņems lietotājam visas piekļuves tiesības uzņēmuma datiem un funkcijām.</p>
+                            
+                            <form method="post" class="mt-4">
+                                {% csrf_token %}
+                                
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="{% url 'companies_tenant:company_members' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-person-x me-2"></i> Noņemt dalībnieku
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

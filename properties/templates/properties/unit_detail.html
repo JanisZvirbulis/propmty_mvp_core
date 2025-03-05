@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ unit.unit_number }} - {{ property.address }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address|capfirst }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ unit.unit_number }}</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">{{ property.address|capfirst }} - {{ unit.unit_number }}</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Atpakaļ uz īpašumu
+                        </a>
+                        
+                        <a href="{% url 'properties:unit_edit' company.slug property.id unit.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Rediģēt
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Telpas statuss -->
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <div class="d-flex align-items-center p-3">
+                        {% if unit.status == 'available' %}
+                        <div class="badge bg-success p-2 me-3">
+                            <i class="bi bi-check-circle fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Telpa ir pieejama</h5>
+                            <p class="mb-0 text-muted">Jūs varat izveidot jaunu īres līgumu</p>
+                        </div>
+                        {% elif unit.status == 'rented' %}
+                        <div class="badge bg-danger p-2 me-3">
+                            <i class="bi bi-person-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Telpa ir izīrēta</h5>
+                            <p class="mb-0 text-muted">Aktīvs īres līgums</p>
+                        </div>
+                        {% elif unit.status == 'reserved' %}
+                        <div class="badge bg-warning p-2 me-3">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Telpa ir rezervēta</h5>
+                            <p class="mb-0 text-muted">Gaida īrnieka apstiprinājumu</p>
+                        </div>
+                        {% elif unit.status == 'maintenance' %}
+                        <div class="badge bg-secondary p-2 me-3">
+                            <i class="bi bi-tools fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Telpa ir remontā</h5>
+                            <p class="mb-0 text-muted">Nav pieejama iznomāšanai</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if unit.status == 'available' %}
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteTenantModal">
+                                <i class="bi bi-person-plus me-2"></i> Uzaicināt īrnieku
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Telpas informācija -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Telpas informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Numurs:</dt>
+                                        <dd class="col-sm-7">{{ unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-5">Stāvs:</dt>
+                                        <dd class="col-sm-7">{{ unit.floor }}</dd>
+                                        
+                                        <dt class="col-sm-5">Platība:</dt>
+                                        <dd class="col-sm-7">{{ unit.area }} m²</dd>
+                                        
+                                        <dt class="col-sm-5">Istabas:</dt>
+                                        <dd class="col-sm-7">{{ unit.rooms }}</dd>
+                                        
+                                        <dt class="col-sm-5">Veids:</dt>
+                                        <dd class="col-sm-7">{{ unit.get_unit_type_display }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Vannas istabas:</dt>
+                                        <dd class="col-sm-7">{{ unit.bathroom_count }}</dd>
+                                        
+                                        <dt class="col-sm-5">Balkons:</dt>
+                                        <dd class="col-sm-7">{{ unit.has_balcony|yesno:"Jā,Nē" }}</dd>
+                                        
+                                        <dt class="col-sm-5">Noliktava:</dt>
+                                        <dd class="col-sm-7">{{ unit.has_storage|yesno:"Jā,Nē" }}</dd>
+                                        
+                                        <dt class="col-sm-5">Autostāvvietas:</dt>
+                                        <dd class="col-sm-7">{{ unit.parking_spots }}</dd>
+                                        
+                                        <dt class="col-sm-5">Statuss:</dt>
+                                        <dd class="col-sm-7">
+                                            {% if unit.status == 'available' %}
+                                            <span class="badge bg-success">Pieejama</span>
+                                            {% elif unit.status == 'rented' %}
+                                            <span class="badge bg-danger">Izīrēta</span>
+                                            {% elif unit.status == 'reserved' %}
+                                            <span class="badge bg-warning">Rezervēta</span>
+                                            {% elif unit.status == 'maintenance' %}
+                                            <span class="badge bg-secondary">Remontā</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            {% if unit.notes %}
+                            <div class="mt-3">
+                                <h6 class="border-bottom pb-2">Piezīmes</h6>
+                                <p class="mb-0">{{ unit.notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Skaitītāji -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Skaitītāji</h5>
+                            <a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}" class="btn btn-sm btn-outline-light">
+                                <i class="bi bi-eye"></i> Skatīt visus
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="border-bottom pb-2">Skaitītāju statuss</h6>
+                                <div class="d-flex flex-wrap mt-2">
+                                    <span class="badge {% if unit.has_water_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-droplet"></i> Ūdens
+                                    </span>
+                                    <span class="badge {% if unit.has_gas_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-fire"></i> Gāze
+                                    </span>
+                                    <span class="badge {% if unit.has_electricity_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-lightning"></i> Elektrība
+                                    </span>
+                                    <span class="badge {% if unit.has_heating_meter %}bg-primary{% else %}bg-secondary{% endif %} me-2 mb-2">
+                                        <i class="bi bi-thermometer-half"></i> Apkure
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if unit.meters.filter.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Veids</th>
+                                            <th>Numurs</th>
+                                            <th>Statuss</th>
+                                            <th>Pēdējais rādījums</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for meter in unit.meters.filter.active %}
+                                        <tr>
+                                            <td>{{ meter.get_meter_type_display }}</td>
+                                            <td>{{ meter.meter_number }}</td>
+                                            <td>
+                                                {% if meter.status == 'active' %}
+                                                <span class="badge bg-success">Aktīvs</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">{{ meter.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% with last_reading=meter.readings.first %}
+                                                    {% if last_reading %}
+                                                        {{ last_reading.reading }} ({{ last_reading.reading_date|date:"d.m.Y" }})
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3">
+                                <p class="text-muted mb-0">Nav pievienotu skaitītāju</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-3 text-end">
+                                <a href="{% url 'properties:unit_meters' company.slug property.id unit.id %}" class="btn btn-primary">
+                                    <i class="bi bi-speedometer me-2"></i> Pārvaldīt skaitītājus
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            <!-- Īres līgumi -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Īres līgumi</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_leases %}
+                    <h6 class="mb-3">Aktīvi līgumi</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Īrnieks</th>
+                                    <th>Periods</th>
+                                    <th>Īres maksa</th>
+                                    <th>Statuss</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lease in active_leases %}
+                                <tr>
+                                    <td>
+                                        {% if lease.tenant %}
+                                            {{ lease.tenant.get_full_name }}
+                                        {% else %}
+                                            <span class="text-muted">Nav īrnieka</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</td>
+                                    <td>{{ lease.rent_amount }} €/mēn.</td>
+                                    <td><span class="badge bg-success">Aktīvs</span></td>
+                                    <td>
+                                        <a href="{% url 'leases:lease_detail' company.slug lease.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Skatīt
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% elif draft_leases %}
+                    <h6 class="mb-3">Gaidoši līgumi</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Uzaicinājuma e-pasts</th>
+                                    <th>Periods</th>
+                                    <th>Īres maksa</th>
+                                    <th>Statuss</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lease in draft_leases %}
+                                <tr>
+                                    <td>
+                                        {% if invitation %}
+                                            {{ invitation.email }}
+                                        {% else %}
+                                            <span class="text-muted">Nav uzaicinājuma</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</td>
+                                    <td>{{ lease.rent_amount }} €/mēn.</td>
+                                    <td>
+                                        {% if invitation %}
+                                            {% if invitation.status == 'pending' %}
+                                                <span class="badge bg-warning">Gaida apstiprinājumu</span>
+                                            {% elif invitation.status == 'accepted' %}
+                                                <span class="badge bg-success">Pieņemts</span>
+                                            {% elif invitation.status == 'expired' %}
+                                                <span class="badge bg-danger">Beidzies</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Melnraksts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'leases:lease_detail' company.slug lease.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Skatīt
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                        </div>
+                        <h5>Nav aktīvu vai gaidošu līgumu</h5>
+                        <p class="text-muted mb-3">Šai telpai nav pievienoti īres līgumi.</p>
+                        
+                        {% if unit.status == 'available' %}
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteTenantModal">
+                            <i class="bi bi-person-plus me-2"></i> Uzaicināt īrnieku
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Īrnieka uzaicināšanas logs -->
+{% if unit.status == 'available' %}
+<div class="modal fade" id="inviteTenantModal" tabindex="-1" aria-labelledby="inviteTenantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="inviteTenantModalLabel">Uzaicināt īrnieku</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-info-circle-fill fs-3"></i>
+                            </div>
+                            <div>
+                                <h5>Par īrnieka uzaicināšanu</h5>
+                                <p class="mb-0">
+                                    Pēc uzaicinājuma nosūtīšanas, potenciālais īrnieks saņems e-pastu ar saiti, 
+                                    kur varēs reģistrēties sistēmā un pieņemt īres piedāvājumu. 
+                                    Līdz pieņemšanai, telpa tiks atzīmēta kā "Rezervēta".
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Īrnieka kontaktinformācija</h5>
+                        <div class="mb-3">
+                            <label for="{{ form.tenant_email.id_for_label }}" class="form-label">Īrnieka e-pasts *</label>
+                            {{ form.tenant_email }}
+                            {% if form.tenant_email.errors %}
+                                <div class="text-danger">{{ form.tenant_email.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Uz šo e-pastu tiks nosūtīts uzaicinājums pievienoties.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Līguma informācija</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.start_date.id_for_label }}" class="form-label">Sākuma datums *</label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}
+                                    <div class="text-danger">{{ form.start_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.end_date.id_for_label }}" class="form-label">Beigu datums *</label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}
+                                    <div class="text-danger">{{ form.end_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.rent_amount.id_for_label }}" class="form-label">Īres maksa (€/mēnesī) *</label>
+                                {{ form.rent_amount }}
+                                {% if form.rent_amount.errors %}
+                                    <div class="text-danger">{{ form.rent_amount.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.security_deposit.id_for_label }}" class="form-label">Drošības depozīts (€) *</label>
+                                {{ form.security_deposit }}
+                                {% if form.security_deposit.errors %}
+                                    <div class="text-danger">{{ form.security_deposit.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Atcelt</button>
+                    <button type="submit" name="invite_tenant" class="btn btn-primary">
+                        <i class="bi bi-send me-2"></i> Nosūtīt uzaicinājumu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

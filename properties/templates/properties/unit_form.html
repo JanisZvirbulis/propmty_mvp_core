@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if is_creating %}Pievienot telpu{% else %}Rediģēt telpu{% endif %} - {{ property.address }} - {{ company.name }} - Propmty
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address|capfirst }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            {% if is_creating %}Pievienot telpu{% else %}Rediģēt telpu{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% if is_creating %}
+                        Pievienot jaunu telpu īpašumam: {{ property.address|capfirst }}
+                    {% else %}
+                        Rediģēt telpu: {{ unit.unit_number }}
+                    {% endif %}
+                </h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="card shadow">
+                        <div class="card-body p-4">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.unit_number.id_for_label }}" class="form-label">Telpas numurs *</label>
+                                        {{ form.unit_number }}
+                                        {% if form.unit_number.errors %}
+                                            <div class="text-danger">{{ form.unit_number.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Dzīvokļa vai telpas numurs</div>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.floor.id_for_label }}" class="form-label">Stāvs *</label>
+                                        {{ form.floor }}
+                                        {% if form.floor.errors %}
+                                            <div class="text-danger">{{ form.floor.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.unit_type.id_for_label }}" class="form-label">Telpas tips *</label>
+                                        {{ form.unit_type }}
+                                        {% if form.unit_type.errors %}
+                                            <div class="text-danger">{{ form.unit_type.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.area.id_for_label }}" class="form-label">Platība (m²) *</label>
+                                        {{ form.area }}
+                                        {% if form.area.errors %}
+                                            <div class="text-danger">{{ form.area.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.rooms.id_for_label }}" class="form-label">Istabu skaits *</label>
+                                        {{ form.rooms }}
+                                        {% if form.rooms.errors %}
+                                            <div class="text-danger">{{ form.rooms.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label">Statuss *</label>
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                            <div class="text-danger">{{ form.status.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.bathroom_count.id_for_label }}" class="form-label">Vannas istabu skaits</label>
+                                        {{ form.bathroom_count }}
+                                        {% if form.bathroom_count.errors %}
+                                            <div class="text-danger">{{ form.bathroom_count.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.parking_spots.id_for_label }}" class="form-label">Stāvvietu skaits</label>
+                                        {{ form.parking_spots }}
+                                        {% if form.parking_spots.errors %}
+                                            <div class="text-danger">{{ form.parking_spots.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h5 class="border-bottom pb-2">Telpas skaitītāji</h5>
+                                    <p class="text-muted small mb-3">Atzīmējiet, kādi individuāli skaitītāji ir telpai</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_water_meter }}
+                                                <label class="form-check-label" for="{{ form.has_water_meter.id_for_label }}">
+                                                    <i class="bi bi-droplet"></i> Ūdens skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_gas_meter }}
+                                                <label class="form-check-label" for="{{ form.has_gas_meter.id_for_label }}">
+                                                    <i class="bi bi-fire"></i> Gāzes skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_electricity_meter }}
+                                                <label class="form-check-label" for="{{ form.has_electricity_meter.id_for_label }}">
+                                                    <i class="bi bi-lightning"></i> Elektrības skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_heating_meter }}
+                                                <label class="form-check-label" for="{{ form.has_heating_meter.id_for_label }}">
+                                                    <i class="bi bi-thermometer-half"></i> Siltuma skaitītājs
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h5 class="border-bottom pb-2">Papildu aprīkojums</h5>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_balcony }}
+                                                <label class="form-check-label" for="{{ form.has_balcony.id_for_label }}">
+                                                    <i class="bi bi-door-open"></i> Balkons
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.has_storage }}
+                                                <label class="form-check-label" for="{{ form.has_storage.id_for_label }}">
+                                                    <i class="bi bi-box-seam"></i> Noliktava
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">Papildu piezīmes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger">{{ form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atpakaļ
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if is_creating %}
+                                            <i class="bi bi-plus-circle"></i> Pievienot telpu
+                                        {% else %}
+                                            <i class="bi bi-check2"></i> Saglabāt izmaiņas
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ progress_percentage }}%;" 
+                             aria-valuenow="{{ current_properties_count }}" aria-valuemin="0" aria-valuemax="{{ max_properties }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

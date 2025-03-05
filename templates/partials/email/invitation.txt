@@ -1,0 +1,20 @@
+Welcome to Your New Home!
+
+You've been invited to rent a property through Propmty.
+
+Property Details:
+{{ invitation.lease.unit.property.address }}
+Unit: {{ invitation.lease.unit.unit_number }}
+Type: {{ invitation.lease.unit.get_unit_type_display }}
+Area: {{ invitation.lease.unit.area }}m²
+Rooms: {{ invitation.lease.unit.rooms }}
+
+Monthly Rent: €{{ invitation.lease.rent_amount }}
+Lease Period: {{ invitation.lease.start_date|date:"M d, Y" }} - {{ invitation.lease.end_date|date:"M d, Y" }}
+
+To proceed with the rental agreement, please visit the following link to create your account:
+{{ invitation_url }}
+
+This invitation expires on {{ expires_at|date:"M d, Y H:i" }}
+
+If you have any questions, please contact the property manager.
