@@ -62,7 +62,7 @@ def company_lease_list(request, company_slug):
         'company': company,
         'page_obj': page_obj,
         'properties': properties,
-        'active_page': 'leases',  # Mainām uz 'leases' tā vietā, lai lietotu 'properties'
+        'active_page': 'tenant_leases',  # Mainām uz 'leases' tā vietā, lai lietotu 'properties'
         'filters': {
             'status': status,
             'property_id': property_id,
@@ -155,7 +155,7 @@ def lease_detail(request, company_slug, pk):
         'lease': lease,
         'company': company,
         'invitation': invitation,
-        'active_page': 'leases'
+        'active_page': 'tenant_leases'
     })
 
 @login_required
@@ -185,7 +185,7 @@ def lease_edit(request, company_slug, pk):
         'form': form,
         'lease': lease,
         'company': company,
-        'active_page': 'leases',
+        'active_page': 'tenant_leases',
         'action': 'Edit'
     })
 
@@ -226,7 +226,7 @@ def lease_terminate(request, company_slug, pk):
         'form': form,
         'lease': lease,
         'company': company,
-        'active_page': 'leases',
+        'active_page': 'tenant_leases',
     })
 
 @login_required
@@ -255,7 +255,7 @@ def lease_delete(request, company_slug, pk):
     return render(request, 'leases/lease_delete.html', {
         'lease': lease,
         'company': company,
-        'active_page': 'leases'
+        'active_page': 'tenant_leases'
     })
 
 

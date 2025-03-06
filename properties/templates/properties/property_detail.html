@@ -166,7 +166,7 @@
                 </div>
             </div>
             
-            <!-- Telpu saraksts -->
+            <!-- Telpu saraksts ar filtriem un pagināciju -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Telpas un dzīvokļi</h5>
@@ -179,8 +179,85 @@
                         {% endif %}
                     {% endif %}
                 </div>
+                
+                <!-- Filtru sadaļa -->
+                <div class="card-body border-bottom py-3">
+                    <button class="btn btn-sm btn-outline-secondary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#unitFilters">
+                        <i class="bi bi-funnel me-1"></i> Filtri
+                    </button>
+                    
+                    <div class="collapse {% if filters.any_filter %}show{% endif %}" id="unitFilters">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Stāvs</label>
+                                <select name="floor" class="form-select form-select-sm">
+                                    <option value="">Visi stāvi</option>
+                                    {% for floor_item in available_floors %}
+                                    <option value="{{ floor_item }}" {% if filters.floor == floor_item|stringformat:"s" %}selected{% endif %}>{{ floor_item }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Telpu tips</label>
+                                <select name="unit_type" class="form-select form-select-sm">
+                                    <option value="">Visi tipi</option>
+                                    <option value="apartment" {% if filters.unit_type == 'apartment' %}selected{% endif %}>Dzīvoklis</option>
+                                    <option value="office" {% if filters.unit_type == 'office' %}selected{% endif %}>Birojs</option>
+                                    <option value="retail" {% if filters.unit_type == 'retail' %}selected{% endif %}>Veikals</option>
+                                    <option value="warehouse" {% if filters.unit_type == 'warehouse' %}selected{% endif %}>Noliktava</option>
+                                    <option value="other" {% if filters.unit_type == 'other' %}selected{% endif %}>Cits</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Statuss</label>
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="">Visi statusi</option>
+                                    <option value="available" {% if filters.status == 'available' %}selected{% endif %}>Brīvs</option>
+                                    <option value="rented" {% if filters.status == 'rented' %}selected{% endif %}>Izīrēts</option>
+                                    <option value="maintenance" {% if filters.status == 'maintenance' %}selected{% endif %}>Remontā</option>
+                                    <option value="reserved" {% if filters.status == 'reserved' %}selected{% endif %}>Rezervēts</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Min. platība (m²)</label>
+                                <input type="number" name="min_area" class="form-control form-control-sm" value="{{ filters.min_area|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Max. platība (m²)</label>
+                                <input type="number" name="max_area" class="form-control form-control-sm" value="{{ filters.max_area|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Min. istabu skaits</label>
+                                <input type="number" name="min_rooms" class="form-control form-control-sm" value="{{ filters.min_rooms|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">Kārtot pēc</label>
+                                <select name="sort" class="form-select form-select-sm">
+                                    <option value="unit_number" {% if filters.sort == 'unit_number' %}selected{% endif %}>Numurs (augošs)</option>
+                                    <option value="-unit_number" {% if filters.sort == '-unit_number' %}selected{% endif %}>Numurs (dilstošs)</option>
+                                    <option value="floor" {% if filters.sort == 'floor' %}selected{% endif %}>Stāvs (augošs)</option>
+                                    <option value="-floor" {% if filters.sort == '-floor' %}selected{% endif %}>Stāvs (dilstošs)</option>
+                                    <option value="area" {% if filters.sort == 'area' %}selected{% endif %}>Platība (augošs)</option>
+                                    <option value="-area" {% if filters.sort == '-area' %}selected{% endif %}>Platība (dilstošs)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12 text-end">
+                                <a href="{% url 'properties:property_detail' company.slug property.id %}" class="btn btn-sm btn-secondary me-2">Notīrīt filtrus</a>
+                                <button type="submit" class="btn btn-sm btn-primary">Filtrēt</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
                 <div class="card-body">
-                    {% if units %}
+                    {% if unit_page %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -196,7 +273,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for unit in units %}
+                                {% for unit in unit_page %}
                                 <tr>
                                     <td>{{ unit.unit_number }}</td>
                                     <td>{{ unit.floor }}</td>
@@ -259,6 +336,60 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    {% if unit_page.has_other_pages %}
+                    <div class="mt-4">
+                        <nav aria-label="Unit pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if unit_page.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo; Pirmā</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ unit_page.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Iepr.</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Pirmā</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Iepr.</span>
+                                </li>
+                                {% endif %}
+
+                                {% for i in unit_page.paginator.page_range %}
+                                    {% if unit_page.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% elif i > unit_page.number|add:'-3' and i < unit_page.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if unit_page.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ unit_page.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Nāk.</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ unit_page.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Pēdējā &raquo;</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Nāk.</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Pēdējā &raquo;</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
                     {% else %}
                     <div class="text-center py-5">
                         <div class="mb-4">

@@ -25,7 +25,7 @@ def company_issues(request, company_slug):
     ).select_related(
         'unit',
         'unit__property',
-        'reported_by'
+        'reported_by',
     ).order_by('-created_at')
     
     # Get properties for filter - IZMAINĪTĀ RINDA

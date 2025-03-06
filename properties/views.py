@@ -1,14 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Property, Unit
-from .forms import PropertyForm, UnitForm
-from core.decorators import tenant_required
-from datetime import timedelta
+from django.urls import reverse
+from django.core.paginator import Paginator
 from django.utils import timezone
+from datetime import timedelta
+
+from .models import Property, Unit, UnitMeter, MeterReading
+from .forms import PropertyForm, UnitForm, UnitMeterForm, MeterReadingForm
+from core.decorators import tenant_required
 from tenant_portal.models import TenantInvitation
 from utils.utils import send_lease_invitation_email
 from leases.forms import LeaseCreateForm
+
+
 
 @login_required
 @tenant_required
@@ -114,7 +119,40 @@ def property_create(request, company_slug):
 def property_detail(request, company_slug, pk):
     # Atrodam īpašumu, kas pieder current tenant
     property = get_object_or_404(Property, id=pk, company=request.tenant)
-    # Iegūstam statistiku par unitiem
+    
+    # Iegūstam filtrus no request
+    floor = request.GET.get('floor')
+    unit_type = request.GET.get('unit_type')
+    status = request.GET.get('status')
+    min_area = request.GET.get('min_area')
+    max_area = request.GET.get('max_area')
+    min_rooms = request.GET.get('min_rooms')
+    sort = request.GET.get('sort', 'unit_number')  # Noklusējuma kārtošana pēc numura
+    
+    # Sākotnējā telpu atlase
+    units_queryset = property.units.all()
+    
+    # Filtru pielietošana
+    if floor:
+        units_queryset = units_queryset.filter(floor=floor)
+    if unit_type:
+        units_queryset = units_queryset.filter(unit_type=unit_type)
+    if status:
+        units_queryset = units_queryset.filter(status=status)
+    if min_area:
+        units_queryset = units_queryset.filter(area__gte=float(min_area))
+    if max_area:
+        units_queryset = units_queryset.filter(area__lte=float(max_area))
+    if min_rooms:
+        units_queryset = units_queryset.filter(rooms__gte=int(min_rooms))
+    
+    # Kārtošana
+    units_queryset = units_queryset.order_by(sort)
+    
+    # Iegūstam unikālos stāvus filtram
+    available_floors = property.units.values_list('floor', flat=True).distinct().order_by('floor')
+    
+    # Statistika par telpām
     total_units = property.units.count()
     available_units = property.units.filter(status='available').count()
     rented_units = property.units.filter(status='rented').count()
@@ -127,16 +165,20 @@ def property_detail(request, company_slug, pk):
     average_area = 0
     if total_units > 0:
         average_area = total_area / total_units
-
     
-    # Iegūstam visus unitus
-    units = property.units.all().order_by('unit_number')
+    # Paginācija
+    paginator = Paginator(units_queryset, 10)  # 10 telpas vienā lapā
+    page_number = request.GET.get('page')
+    unit_page = paginator.get_page(page_number)
+    
+    # Pārbaudam vai kāds filtrs ir aktīvs
+    any_filter = bool(floor or unit_type or status or min_area or max_area or min_rooms or sort != 'unit_number')
     
     context = {
         'property': property,
         'company': request.tenant,
         'active_page': 'properties',
-        'units': units,
+        'unit_page': unit_page,
         'total_units': total_units,
         'available_units': available_units,
         'rented_units': rented_units,
@@ -144,8 +186,18 @@ def property_detail(request, company_slug, pk):
         'reserved_units': reserved_units,
         'total_area': total_area,
         'average_area': average_area,
+        'available_floors': available_floors,
+        'filters': {
+            'floor': floor,
+            'unit_type': unit_type,
+            'status': status,
+            'min_area': min_area,
+            'max_area': max_area,
+            'min_rooms': min_rooms,
+            'sort': sort,
+            'any_filter': any_filter
+        },
     }
-    
     return render(request, 'properties/property_detail.html', context)
 
 
@@ -396,17 +448,6 @@ def unit_delete(request, company_slug, property_pk, unit_pk):
         'active_page': 'properties'
     })
 
-
-# properties/views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.utils import timezone
-from django.urls import reverse
-from django.core.paginator import Paginator
-from .models import Property, Unit, UnitMeter, MeterReading
-from .forms import UnitMeterForm, MeterReadingForm
-from core.decorators import tenant_required
 
 @login_required
 @tenant_required
