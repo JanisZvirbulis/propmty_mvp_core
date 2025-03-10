@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mani rēķini - Propmty{% endblock %}
+
+{% block content %}
+{% include 'partials/navbar.html'%}
+<div class="container py-4">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tenant_portal:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Rēķini</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+        <h1 class="h2">Mani rēķini</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle me-2" data-bs-toggle="dropdown">
+                <i class="bi bi-funnel"></i> Filtri
+            </button>
+            <div class="dropdown-menu p-3" style="width: 300px;">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Statuss</label>
+                        <select name="status" class="form-select">
+                            <option value="">Visi</option>
+                            <option value="sent" {% if filters.status == 'sent' %}selected{% endif %}>Nosūtīts</option>
+                            <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>Apmaksāts</option>
+                            <option value="overdue" {% if filters.status == 'overdue' %}selected{% endif %}>Kavēts</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Datums no</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ filters.date_from|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Datums līdz</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ filters.date_to|default:'' }}">
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Filtrēt</button>
+                        <a href="{% url 'tenant_portal:tenant_invoices' %}" class="btn btn-outline-secondary">Notīrīt</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Neapmaksātie rēķini -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Gaida apmaksu</h5>
+        </div>
+        <div class="card-body">
+            {% if unpaid_invoices %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numurs</th>
+                            <th>Īpašums</th>
+                            <th>Datums</th>
+                            <th>Termiņš</th>
+                            <th>Summa</th>
+                            <th>Statuss</th>
+                            <th>Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in unpaid_invoices %}
+                        <tr>
+                            <td>{{ invoice.number }}</td>
+                            <td>{{ invoice.lease.unit.property.address }} - {{ invoice.lease.unit.unit_number }}</td>
+                            <td>{{ invoice.issue_date|date:"d.m.Y" }}</td>
+                            <td>{{ invoice.due_date|date:"d.m.Y" }}</td>
+                            <td>{{ invoice.total_amount }} €</td>
+                            <td>
+                                {% if invoice.status == 'sent' %}
+                                <span class="badge bg-primary">Nosūtīts</span>
+                                {% elif invoice.status == 'overdue' %}
+                                <span class="badge bg-danger">Kavēts</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'tenant_portal:tenant_invoice_detail' invoice.id %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye"></i> Skatīt
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success">
+                                        <i class="bi bi-credit-card"></i> Apmaksāt
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-check-circle fs-1 text-muted"></i>
+                </div>
+                <h5>Nav neapmaksātu rēķinu</h5>
+                <p class="text-muted">Jums pašlaik nav neapmaksātu rēķinu.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Apmaksātie rēķini -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Apmaksātie rēķini</h5>
+        </div>
+        <div class="card-body">
+            {% if paid_invoices %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numurs</th>
+                            <th>Īpašums</th>
+                            <th>Datums</th>
+                            <th>Apmaksāts</th>
+                            <th>Summa</th>
+                            <th>Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in paid_invoices %}
+                        <tr>
+                            <td>{{ invoice.number }}</td>
+                            <td>{{ invoice.lease.unit.property.address }} - {{ invoice.lease.unit.unit_number }}</td>
+                            <td>{{ invoice.issue_date|date:"d.m.Y" }}</td>
+                            <td>{{ invoice.paid_date|date:"d.m.Y" }}</td>
+                            <td>{{ invoice.total_amount }} €</td>
+                            <td>
+                                <a href="{% url 'tenant_portal:tenant_invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Skatīt
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-receipt fs-1 text-muted"></i>
+                </div>
+                <h5>Nav apmaksātu rēķinu</h5>
+                <p class="text-muted">Jums vēl nav apmaksātu rēķinu.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Citi rēķini (atceltie, melnraksti) -->
+    {% if other_invoices %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Citi rēķini</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numurs</th>
+                            <th>Īpašums</th>
+                            <th>Datums</th>
+                            <th>Summa</th>
+                            <th>Statuss</th>
+                            <th>Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in other_invoices %}
+                        <tr>
+                            <td>{{ invoice.number }}</td>
+                            <td>{{ invoice.lease.unit.property.address }} - {{ invoice.lease.unit.unit_number }}</td>
+                            <td>{{ invoice.issue_date|date:"d.m.Y" }}</td>
+                            <td>{{ invoice.total_amount }} €</td>
+                            <td>
+                                {% if invoice.status == 'draft' %}
+                                <span class="badge bg-secondary">Melnraksts</span>
+                                {% elif invoice.status == 'cancelled' %}
+                                <span class="badge bg-warning">Atcelts</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'tenant_portal:tenant_invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Skatīt
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Informācija par rēķinu apmaksu -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informācija par rēķinu apmaksu</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h5><i class="bi bi-info-circle me-2"></i>Kā apmaksāt rēķinu?</h5>
+                <p>Rēķinus var apmaksāt šādos veidos:</p>
+                <ul>
+                    <li>Tiešsaistē - izmantojot pogu "Apmaksāt" pie katra rēķina</li>
+                    <li>Ar bankas pārskaitījumu - izmantojot rēķinā norādītos rekvizītus</li>
+                    <li>Klātienē - apmeklējot mūsu biroju</li>
+                </ul>
+                <p>Lūdzu, ņemiet vērā, ka rēķini ir jāapmaksā līdz norādītajam termiņam, lai izvairītos no soda naudām vai citām sankcijām.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

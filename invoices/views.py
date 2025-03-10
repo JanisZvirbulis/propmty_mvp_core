@@ -82,7 +82,10 @@ def invoice_create(request, company_slug, lease_id):
     
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
-        if form.is_valid():
+        formset = InvoiceItemFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+            # Vispirms izveidojam rēķinu, bet vēl nesaglabājam
             invoice = form.save(commit=False)
             invoice.company = company
             invoice.lease = lease
@@ -100,26 +103,36 @@ def invoice_create(request, company_slug, lease_id):
             # Formāts: YYYY-MM-COUNT (piemēram, 2023-01-0001)
             invoice.number = f"{current_year}-{current_month:02d}-{month_invoice_count+1:04d}"
             
-            # Saglabājam rēķinu
+            # Aprēķinam kopējo summu no formset datiem, pirms saglabājam rēķinu
+            total_amount = 0
+            for form in formset:
+                if form.is_valid() and not form.cleaned_data.get('DELETE', False):
+                    quantity = form.cleaned_data.get('quantity', 0)
+                    unit_price = form.cleaned_data.get('unit_price', 0)
+                    if quantity and unit_price:
+                        total_amount += quantity * unit_price
+            
+            # Iestatām total_amount pirms saglabāšanas
+            invoice.total_amount = total_amount
+            
+            # Tagad varam droši saglabāt rēķinu
             invoice.save()
             
-            # Apstrādājam rēķina pozīcijas
-            formset = InvoiceItemFormSet(request.POST, instance=invoice)
-            if formset.is_valid():
-                formset.save()
-                
-                # Aprēķinām kopējo summu
-                total = 0
-                for item in invoice.items.all():
-                    total += item.amount
-                
-                invoice.total_amount = total
-                invoice.save()
-                
-                messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi izveidots.")
-                return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
-        else:
-            formset = InvoiceItemFormSet(request.POST, instance=Invoice())
+            # Manuāli saglabājam rēķina pozīcijas, iestatot company_id
+            for form in formset:
+                if form.is_valid() and not form.cleaned_data.get('DELETE', False):
+                    item = form.save(commit=False)
+                    item.invoice = invoice
+                    item.company = company  # Svarīgākā daļa - iestatām company_id
+                    
+                    # Aprēķinam amount, ja tas nav norādīts
+                    if not item.amount:
+                        item.amount = item.quantity * item.unit_price
+                        
+                    item.save()
+            
+            messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi izveidots.")
+            return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
     else:
         # Izveidojam noklusējuma rēķina pozīciju ar īres maksu
         form = InvoiceForm()
@@ -237,7 +250,7 @@ def invoice_send(request, company_slug, pk):
     """Nosūta rēķinu īrniekam uz e-pastu"""
     company = request.tenant
     
-    # Pārbaudām vai lietotājam ir tiesības
+    # Pārbaudam vai lietotājam ir tiesības
     if not (request.user == company.owner or request.user.company_memberships.filter(
             company=company, role__in=['ADMIN', 'MANAGER']).exists()):
         messages.error(request, "Jums nav tiesību nosūtīt rēķinus.")
@@ -247,54 +260,24 @@ def invoice_send(request, company_slug, pk):
         'lease', 'lease__tenant', 'lease__unit', 'lease__unit__property'
     ), id=pk, company=company)
     
-    # Pārbaudām vai rēķinu vēl var nosūtīt
+    # Pārbaudam vai rēķinu vēl var nosūtīt
     if invoice.status not in ['draft', 'sent', 'overdue']:
         messages.error(request, "Šo rēķinu vairs nevar nosūtīt (atcelts vai apmaksāts).")
         return redirect('invoices:invoice_detail', company_slug=company_slug, pk=pk)
     
-    # Pārbaudām vai ir īrnieks
+    # Pārbaudam vai ir īrnieks
     if not invoice.lease.tenant:
         messages.error(request, "Šim līgumam nav piesaistīts īrnieks.")
         return redirect('invoices:invoice_detail', company_slug=company_slug, pk=pk)
     
-    # Sagatvojam e-pasta saturu
+    # Sagatvojam URL priekš e-pasta
     tenant = invoice.lease.tenant
-    subject = f"Rēķins Nr. {invoice.number} no {company.name}"
+    view_url = f"{settings.SITE_URL}/tenant/invoices/{invoice.id}/"
     
-    # HTML saturs ar rēķina detaļām
-    html_content = render_to_string('invoices/email/invoice_email.html', {
-        'invoice': invoice,
-        'tenant': tenant,
-        'company': company,
-        'items': invoice.items.all(),
-        'view_url': f"{settings.SITE_URL}/tenant/invoices/{invoice.id}/"
-    })
-    
-    # Vienkāršs teksta saturs
-    text_content = f"""
-    Labdien, {tenant.get_full_name()}!
-
-    Jums ir jauns rēķins nr. {invoice.number} no {company.name}.
-    
-    Rēķina summa: {invoice.total_amount} €
-    Apmaksas termiņš: {invoice.due_date}
-    
-    Lai apskatītu rēķinu, lūdzu, pieslēdzieties savam īrnieka kontam.
-    
-    Ar cieņu,
-    {company.name}
-    """
-    
-    # Nosūtām e-pastu
     try:
-        email = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[tenant.email]
-        )
-        email.attach_alternative(html_content, "text/html")
-        email.send()
+        # Izmantojam jauno funkciju no utils
+        from utils.utils import send_invoice_email
+        send_invoice_email(invoice, tenant, company, view_url)
         
         # Atjauninam rēķina statusu
         invoice.send_to_tenant()

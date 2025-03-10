@@ -50,6 +50,48 @@ def send_company_invitation_email(invitation):
         html_message=html_message
     )
 
+def send_invoice_email(invoice, tenant, company, view_url):
+    """
+    Nosūta e-pastu īrniekam par jaunu vai kavētu rēķinu.
+    
+    Args:
+        invoice: Invoice objekts
+        tenant: User objekts (īrnieks)
+        company: Company objekts
+        view_url: URL uz rēķina skatu īrnieka portālā
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    
+    subject = f"Rēķins Nr.{invoice.number} no {company.name}"
+    
+    # Sagatavojam kontekstu šablonam
+    context = {
+        'invoice': invoice,
+        'tenant': tenant,
+        'company': company,
+        'items': invoice.items.all(),
+        'view_url': view_url
+    }
+    
+    # Iegūstam HTML un teksta saturu
+    html_content = render_to_string('partials/email/invoice_email.html', context)
+    text_content = render_to_string('partials/email/invoice_email.txt', context)
+    
+    # Izveidojam e-pasta ziņojumu
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[tenant.email]
+    )
+    email.attach_alternative(html_content, "text/html")
+    
+    # Nosūtām e-pastu
+    email.send()
+    
+    return True
 
 def tenant_required(view_func):
     @wraps(view_func)

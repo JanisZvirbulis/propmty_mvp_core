@@ -1,0 +1,41 @@
+RĒĶINS NR.{{ invoice.number }}
+
+Labdien, {{ tenant.get_full_name }}!
+
+Jums ir sagatavots jauns rēķins no {{ company.name }}.
+
+---
+RĒĶINA INFORMĀCIJA:
+Rēķina numurs: {{ invoice.number }}
+Datums: {{ invoice.issue_date|date:"d.m.Y" }}
+Apmaksas termiņš: {{ invoice.due_date|date:"d.m.Y" }}
+Statuss: {% if invoice.status == 'sent' %}Nosūtīts{% elif invoice.status == 'overdue' %}Kavēts{% endif %}
+Summa: {{ invoice.total_amount }} €
+---
+
+ĪPAŠUMA INFORMĀCIJA:
+Adrese: {{ invoice.lease.unit.property.address }}
+Telpa/Dzīvoklis: {{ invoice.lease.unit.unit_number }}
+
+RĒĶINA POZĪCIJAS:
+{% for item in items %}
+- {{ item.description }}: {{ item.quantity }} x {{ item.unit_price }} € = {{ item.amount }} €
+{% endfor %}
+---
+KOPĀ: {{ invoice.total_amount }} €
+
+{% if invoice.notes %}
+PIEZĪMES:
+{{ invoice.notes }}
+{% endif %}
+
+Lai skatītu un apmaksātu rēķinu, lūdzu, apmeklējiet:
+{{ view_url }}
+
+Ja jums rodas jautājumi par rēķinu, lūdzu, sazinieties ar īpašuma pārvaldnieku.
+
+Ar cieņu,
+{{ company.name }}
+
+---
+Šī e-pasta saturs ir konfidenciāls un paredzēts tikai adresātam.
