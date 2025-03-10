@@ -2,13 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.template.loader import render_to_string
-from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
 from django.conf import settings
 from core.decorators import tenant_required
-from .models import Invoice
+from .models import Invoice, InvoiceItem
 from .forms import InvoiceForm, InvoiceItemFormSet
 from leases.models import Lease
+from inspections.models import Maintenance
+from properties.models import UnitMeter, MeterReading
+import datetime
+from decimal import Decimal
 
 @login_required
 @tenant_required
@@ -80,78 +83,192 @@ def invoice_create(request, company_slug, lease_id):
     # Pārbaudām vai līgums ir aktīvs
     lease = get_object_or_404(Lease, id=lease_id, company=company, status='active')
     
+    # Pārbaudām, vai ir jau izveidots rēķins šim mēnesim
+    today = timezone.now().date()
+    current_month_start = today.replace(day=1)
+    
+    # Ja šis ir decembris, nākamais mēnesis ir janvāris nākamajā gadā
+    if today.month == 12:
+        next_month = 1
+        next_month_year = today.year + 1
+    else:
+        next_month = today.month + 1
+        next_month_year = today.year
+    
+    next_month_start = datetime.date(next_month_year, next_month, 1)
+    
+    # Meklējam, vai jau ir šī mēneša rēķins
+    existing_invoice = Invoice.objects.filter(
+        lease=lease,
+        issue_date__gte=current_month_start,
+        issue_date__lt=next_month_start
+    ).first()
+    
+    if existing_invoice:
+        messages.warning(
+            request, 
+            f"Šim mēnesim jau ir izveidots rēķins (Nr. {existing_invoice.number}). "
+            f"Varat to rediģēt vai izveidot rēķinu citam periodam."
+        )
+        return redirect('invoices:invoice_detail', company_slug=company_slug, pk=existing_invoice.id)
+    
+    # Aprēķinam potenciālās rēķina pozīcijas
+    items_to_include = []
+    
+    # 1. Īres maksa (vienmēr tiek iekļauta)
+    items_to_include.append({
+        'description': f"Īres maksa par {today.strftime('%Y.g. %B')}",
+        'quantity': 1,
+        'unit_price': lease.rent_amount
+    })
+    
+    # 2. Komunālo pakalpojumu maksājumi - aprēķinām no skaitītāju rādījumiem
+    active_meters = UnitMeter.objects.filter(
+        unit=lease.unit,
+        status='active'
+    )
+    
+    for meter in active_meters:
+        # Atrodam pēdējos divus rādījumus, lai aprēķinātu patēriņu
+        readings = MeterReading.objects.filter(
+            meter=meter
+        ).order_by('-reading_date')[:2]
+        
+        if len(readings) >= 2:
+            # Aprēķinam patēriņu (jaunākais rādījums - vecākais rādījums)
+            consumption = readings[0].reading - readings[1].reading
+            
+            # Pieņemsim, ka katram skaitītāja tipam ir noteikts tarifs
+            tariffs = {
+                'water_cold': Decimal('1.20'),
+                'water_hot': Decimal('4.50'),
+                'gas': Decimal('0.65'),
+                'electricity': Decimal('0.15'),
+                'heating': Decimal('60.00')
+            }
+            
+            if meter.meter_type in tariffs and consumption > 0:
+                tariff = tariffs[meter.meter_type]
+                amount = consumption * tariff
+                
+                meter_type_display = meter.get_meter_type_display()
+                
+                items_to_include.append({
+                    'description': f"{meter_type_display} patēriņš: {consumption} vienības ({readings[1].reading_date.strftime('%d.%m.%Y')} - {readings[0].reading_date.strftime('%d.%m.%Y')})",
+                    'quantity': consumption,
+                    'unit_price': tariff
+                })
+    
+    # 3. Remontdarbi, kas veikti šajā mēnesī un ir par maksu
+    maintenance_works = Maintenance.objects.filter(
+        issue__unit=lease.unit,
+        status='completed',
+        completed_date__gte=current_month_start,
+        completed_date__lt=next_month_start,
+        cost__gt=0
+    )
+    
+    for work in maintenance_works:
+        items_to_include.append({
+            'description': f"Remontdarbi: {work.description} ({work.completed_date.strftime('%d.%m.%Y')})",
+            'quantity': 1,
+            'unit_price': work.cost
+        })
+    
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
-        formset = InvoiceItemFormSet(request.POST)
         
-        if form.is_valid() and formset.is_valid():
-            # Vispirms izveidojam rēķinu, bet vēl nesaglabājam
-            invoice = form.save(commit=False)
-            invoice.company = company
-            invoice.lease = lease
+        # Apstrādājam rēķina izveidi
+        if 'create_invoice' in request.POST:
+            # Iegūstam atlasītās pozīcijas
+            selected_items_indices = request.POST.getlist('selected_items', [])
+            selected_items = []
             
-            # Ģenerējam rēķina numuru
-            current_year = timezone.now().year
-            current_month = timezone.now().month
-            # Atrodam rēķinu skaitu šajā mēnesī
-            month_invoice_count = Invoice.objects.filter(
-                company=company,
-                issue_date__year=current_year,
-                issue_date__month=current_month
-            ).count()
+            for idx in selected_items_indices:
+                try:
+                    item_index = int(idx)
+                    if item_index < len(items_to_include):
+                        selected_items.append(items_to_include[item_index])
+                except ValueError:
+                    continue
             
-            # Formāts: YYYY-MM-COUNT (piemēram, 2023-01-0001)
-            invoice.number = f"{current_year}-{current_month:02d}-{month_invoice_count+1:04d}"
-            
-            # Aprēķinam kopējo summu no formset datiem, pirms saglabājam rēķinu
-            total_amount = 0
-            for form in formset:
-                if form.is_valid() and not form.cleaned_data.get('DELETE', False):
-                    quantity = form.cleaned_data.get('quantity', 0)
-                    unit_price = form.cleaned_data.get('unit_price', 0)
-                    if quantity and unit_price:
-                        total_amount += quantity * unit_price
-            
-            # Iestatām total_amount pirms saglabāšanas
-            invoice.total_amount = total_amount
-            
-            # Tagad varam droši saglabāt rēķinu
-            invoice.save()
-            
-            # Manuāli saglabājam rēķina pozīcijas, iestatot company_id
-            for form in formset:
-                if form.is_valid() and not form.cleaned_data.get('DELETE', False):
-                    item = form.save(commit=False)
-                    item.invoice = invoice
-                    item.company = company  # Svarīgākā daļa - iestatām company_id
-                    
-                    # Aprēķinam amount, ja tas nav norādīts
-                    if not item.amount:
-                        item.amount = item.quantity * item.unit_price
+            if not selected_items:
+                messages.error(request, "Lūdzu, atlasiet vismaz vienu pozīciju rēķinam.")
+                return render(request, 'invoices/invoice_create.html', {
+                    'form': form,
+                    'company': company,
+                    'lease': lease,
+                    'items_to_include': items_to_include,
+                    'active_page': 'invoices'
+                })
+                
+            if form.is_valid():
+                try:
+                    with transaction.atomic():
+                        # Vispirms izveidojam rēķinu
+                        invoice = form.save(commit=False)
+                        invoice.company = company
+                        invoice.lease = lease
                         
-                    item.save()
-            
-            messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi izveidots.")
-            return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
+                        # Ģenerējam rēķina numuru
+                        current_year = timezone.now().year
+                        current_month = timezone.now().month
+                        month_invoice_count = Invoice.objects.filter(
+                            company=company,
+                            issue_date__year=current_year,
+                            issue_date__month=current_month
+                        ).count()
+                        
+                        invoice.number = f"{current_year}-{current_month:02d}-{month_invoice_count+1:04d}"
+                        
+                        # Aprēķinam kopējo summu
+                        total_amount = Decimal('0.00')
+                        
+                        # Saglabājam rēķinu
+                        invoice.save()
+                        
+                        # Pievienojam atlasītās pozīcijas
+                        for item_data in selected_items:
+                            quantity = Decimal(str(item_data['quantity']))
+                            unit_price = Decimal(str(item_data['unit_price']))
+                            amount = quantity * unit_price
+                            total_amount += amount
+                            
+                            # Izveidojam un saglabājam pozīciju
+                            item = InvoiceItem(
+                                invoice=invoice,
+                                company=company,
+                                description=item_data['description'],
+                                quantity=quantity,
+                                unit_price=unit_price,
+                                amount=amount
+                            )
+                            item.save()
+                        
+                        # Atjauninam rēķina kopējo summu
+                        invoice.total_amount = total_amount
+                        invoice.save(update_fields=['total_amount'])
+                        
+                        messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi izveidots.")
+                        return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
+                except Exception as e:
+                    messages.error(request, f"Kļūda izveidojot rēķinu: {str(e)}")
+            else:
+                messages.error(request, "Lūdzu, izlabojiet kļūdas formā.")
+        else:
+            messages.error(request, "Nederīgs pieprasījums.")
     else:
-        # Izveidojam noklusējuma rēķina pozīciju ar īres maksu
-        form = InvoiceForm()
-        invoice = Invoice(company=company, lease=lease)
-        formset = InvoiceItemFormSet(instance=invoice)
-        
-        # Pievienojam noklusējuma rēķina pozīciju ar īres maksu
-        formset.forms[0].initial = {
-            'description': f"Īres maksa - {lease.unit.property.address}, {lease.unit.unit_number}",
-            'quantity': 1,
-            'unit_price': lease.rent_amount
-        }
+        # Noklusējuma vērtības jaunam rēķinam
+        form = InvoiceForm(initial={
+            'issue_date': today,
+            'due_date': today + datetime.timedelta(days=14)
+        })
     
-    return render(request, 'invoices/invoice_form.html', {
+    return render(request, 'invoices/invoice_create.html', {
         'form': form,
-        'formset': formset,
         'company': company,
         'lease': lease,
-        'action': 'create',
+        'items_to_include': items_to_include,
         'active_page': 'invoices'
     })
 
@@ -211,36 +328,111 @@ def invoice_edit(request, company_slug, pk):
         messages.error(request, "Tikai melnraksta statusā esošu rēķinu var rediģēt.")
         return redirect('invoices:invoice_detail', company_slug=company_slug, pk=pk)
     
+    # Iegūstam visas esošās rēķina pozīcijas
+    invoice_items = InvoiceItem.objects.filter(invoice=invoice).order_by('id')
+    
     if request.method == 'POST':
         form = InvoiceForm(request.POST, instance=invoice)
-        formset = InvoiceItemFormSet(request.POST, instance=invoice)
         
-        if form.is_valid() and formset.is_valid():
-            # Saglabājam rēķinu
-            form.save()
-            formset.save()
-            
-            # Aprēķinām kopējo summu
-            total = 0
-            for item in invoice.items.all():
-                total += item.amount
-            
-            invoice.total_amount = total
-            invoice.save()
-            
-            messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi atjaunināts.")
-            return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
+        if 'save_changes' in request.POST and form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Saglabājam rēķina pamatinformāciju
+                    invoice = form.save()
+                    
+                    # Apstrādājam pozīciju izmaiņas
+                    items_to_update = []
+                    items_to_delete = []
+                    new_items = []
+                    
+                    # Apstrādājam esošās pozīcijas - atjaunināšana vai dzēšana
+                    for item in invoice_items:
+                        item_id_str = str(item.id)
+                        
+                        # Ja pozīcija ir atzīmēta dzēšanai
+                        if f"delete_{item_id_str}" in request.POST:
+                            items_to_delete.append(item.id)
+                        else:
+                            # Citādi atjauninam datus, ja tie ir mainīti
+                            description = request.POST.get(f"description_{item_id_str}", "")
+                            quantity = request.POST.get(f"quantity_{item_id_str}", "0")
+                            unit_price = request.POST.get(f"unit_price_{item_id_str}", "0")
+                            
+                            try:
+                                quantity = Decimal(quantity)
+                                unit_price = Decimal(unit_price)
+                                amount = quantity * unit_price
+                                
+                                # Ja dati ir mainīti, atjauninam
+                                if (description != item.description or 
+                                    quantity != item.quantity or 
+                                    unit_price != item.unit_price or 
+                                    amount != item.amount):
+                                    item.description = description
+                                    item.quantity = quantity
+                                    item.unit_price = unit_price
+                                    item.amount = amount
+                                    items_to_update.append(item)
+                            except (ValueError, TypeError, Decimal.InvalidOperation):
+                                messages.error(request, f"Nekorektas vērtības pozīcijai: {description}")
+                    
+                    # Apstrādājam jaunas pozīcijas
+                    new_item_count = int(request.POST.get("new_item_count", "0"))
+                    for i in range(new_item_count):
+                        description = request.POST.get(f"new_description_{i}", "")
+                        quantity_str = request.POST.get(f"new_quantity_{i}", "")
+                        unit_price_str = request.POST.get(f"new_unit_price_{i}", "")
+                        
+                        # Pārbaudam vai ir ievadīti dati
+                        if description and quantity_str and unit_price_str:
+                            try:
+                                quantity = Decimal(quantity_str)
+                                unit_price = Decimal(unit_price_str)
+                                amount = quantity * unit_price
+                                
+                                # Izveidojam jaunu pozīciju
+                                new_items.append(InvoiceItem(
+                                    invoice=invoice,
+                                    company=company,
+                                    description=description,
+                                    quantity=quantity,
+                                    unit_price=unit_price,
+                                    amount=amount
+                                ))
+                            except (ValueError, TypeError, Decimal.InvalidOperation):
+                                messages.error(request, f"Nekorektas vērtības jaunai pozīcijai: {description}")
+                    
+                    # Izdzēšam atzīmētās pozīcijas
+                    if items_to_delete:
+                        InvoiceItem.objects.filter(id__in=items_to_delete).delete()
+                    
+                    # Atjauninam pozīcijas
+                    for item in items_to_update:
+                        item.save()
+                    
+                    # Saglabājam jaunas pozīcijas
+                    if new_items:
+                        InvoiceItem.objects.bulk_create(new_items)
+                    
+                    # Pārrēķinam kopējo summu
+                    total_amount = sum(item.amount for item in InvoiceItem.objects.filter(invoice=invoice))
+                    invoice.total_amount = total_amount
+                    invoice.save(update_fields=['total_amount'])
+                    
+                    messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi atjaunināts.")
+                    return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
+            except Exception as e:
+                messages.error(request, f"Kļūda saglabājot rēķinu: {str(e)}")
+        else:
+            messages.error(request, "Lūdzu, izlabojiet kļūdas formā.")
     else:
         form = InvoiceForm(instance=invoice)
-        formset = InvoiceItemFormSet(instance=invoice)
     
-    return render(request, 'invoices/invoice_form.html', {
+    return render(request, 'invoices/invoice_edit.html', {
         'form': form,
-        'formset': formset,
-        'company': company,
         'invoice': invoice,
-        'lease': invoice.lease,
-        'action': 'edit',
+        'invoice_items': invoice_items,
+        'company': company,
         'active_page': 'invoices'
     })
 
