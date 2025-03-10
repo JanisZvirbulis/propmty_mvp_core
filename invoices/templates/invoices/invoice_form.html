@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if action == 'create' %}Izveidot rēķinu{% else %}Rediģēt rēķinu{% endif %} - {{ company.name }} - Propmty
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_list' company.slug %}">Rēķini</a></li>
+                        {% if action == 'create' %}
+                        <li class="breadcrumb-item active" aria-current="page">Jauns rēķins</li>
+                        {% else %}
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}">{{ invoice.number }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Rediģēt</li>
+                        {% endif %}
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% if action == 'create' %}
+                        Izveidot jaunu rēķinu
+                    {% else %}
+                        Rediģēt rēķinu {{ invoice.number }}
+                    {% endif %}
+                </h1>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Līguma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Adrese:</dt>
+                                <dd class="col-sm-8">{{ lease.unit.property.address }}</dd>
+                                
+                                <dt class="col-sm-4">Telpa:</dt>
+                                <dd class="col-sm-8">{{ lease.unit.unit_number }}</dd>
+                                
+                                <dt class="col-sm-4">Īrnieks:</dt>
+                                <dd class="col-sm-8">{{ lease.tenant.get_full_name|default:"Nav īrnieka" }}</dd>
+                                
+                                <dt class="col-sm-4">Īres maksa:</dt>
+                                <dd class="col-sm-8">{{ lease.rent_amount }} €/mēnesī</dd>
+                                
+                                <dt class="col-sm-4">Līguma termiņš:</dt>
+                                <dd class="col-sm-8">{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Rēķina pamatinformācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="invoiceForm">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.issue_date.id_for_label }}" class="form-label">Rēķina datums *</label>
+                                        {{ form.issue_date }}
+                                        {% if form.issue_date.errors %}
+                                            <div class="text-danger">{{ form.issue_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.due_date.id_for_label }}" class="form-label">Apmaksas termiņš *</label>
+                                        {{ form.due_date }}
+                                        {% if form.due_date.errors %}
+                                            <div class="text-danger">{{ form.due_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">Piezīmes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger">{{ form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Rēķina pozīcijas -->
+                                <h5 class="border-bottom pb-2 mb-3 mt-4">Rēķina pozīcijas</h5>
+                                
+                                {{ formset.management_form }}
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="invoice-items">
+                                        <thead>
+                                            <tr>
+                                                <th width="45%">Apraksts</th>
+                                                <th width="15%">Daudzums</th>
+                                                <th width="20%">Cena (€)</th>
+                                                <th width="20%">Summa (€)</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for form in formset %}
+                                                {% if form.instance.pk %}{{ form.id }}{% endif %}
+                                                <tr class="item-row">
+                                                    <td>
+                                                        {{ form.description }}
+                                                        {% if form.description.errors %}
+                                                            <div class="text-danger">{{ form.description.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {{ form.quantity }}
+                                                        {% if form.quantity.errors %}
+                                                            <div class="text-danger">{{ form.quantity.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {{ form.unit_price }}
+                                                        {% if form.unit_price.errors %}
+                                                            <div class="text-danger">{{ form.unit_price.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <span class="line-total">{{ form.instance.amount|default:"0.00" }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {% if formset.can_delete %}
+                                                            {{ form.DELETE }}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5">
+                                                    <button type="button" id="add-item" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-plus-circle"></i> Pievienot pozīciju
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Kopā:</th>
+                                                <th class="total">0.00 €</th>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    {% if action == 'create' %}
+                                    <a href="{% url 'invoices:invoice_list' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atgriezties
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Atgriezties
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if action == 'create' %}
+                                            <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                                        {% else %}
+                                            <i class="bi bi-check2"></i> Saglabāt izmaiņas
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Funkcija pozīciju summas aprēķināšanai
+    function calculateTotal() {
+        let total = 0;
+        const rows = document.querySelectorAll('.item-row');
+        rows.forEach(row => {
+            const quantity = parseFloat(row.querySelector('input[name$="-quantity"]').value) || 0;
+            const unitPrice = parseFloat(row.querySelector('input[name$="-unit_price"]').value) || 0;
+            const lineTotal = quantity * unitPrice;
+            row.querySelector('.line-total').textContent = lineTotal.toFixed(2);
+            total += lineTotal;
+        });
+        document.querySelector('.total').textContent = total.toFixed(2) + ' €';
+    }
+    
+    // Pievieno klausītājus visiem quantity un unit_price laukiem
+    function addEventListeners() {
+        document.querySelectorAll('input[name$="-quantity"], input[name$="-unit_price"]').forEach(input => {
+            input.addEventListener('input', calculateTotal);
+        });
+        
+        // Pievieno klausītājus delete checkboxes
+        document.querySelectorAll('input[name$="-DELETE"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const row = this.closest('.item-row');
+                if (this.checked) {
+                    row.style.textDecoration = 'line-through';
+                    row.style.opacity = '0.5';
+                } else {
+                    row.style.textDecoration = 'none';
+                    row.style.opacity = '1';
+                }
+                calculateTotal();
+            });
+        });
+    }
+    
+    // Jauna pozīcija
+    document.getElementById('add-item').addEventListener('click', function() {
+        const formCount = document.getElementById('id_form-TOTAL_FORMS');
+        const formNum = parseInt(formCount.value);
+        
+        const tbody = document.querySelector('#invoice-items tbody');
+        const template = document.querySelector('.item-row').cloneNode(true);
+        
+        // Atjauninām indeksus
+        template.querySelectorAll('input, select').forEach(input => {
+            input.name = input.name.replace(/form-\d+/, `form-${formNum}`);
+            input.id = input.id.replace(/form-\d+/, `form-${formNum}`);
+            input.value = '';
+        });
+        
+        tbody.appendChild(template);
+        formCount.value = formNum + 1;
+        
+        // Pievienojam klausītājus jaunajiem laukiem
+        addEventListeners();
+    });
+    
+    // Sākotnējais aprēķins un klausītāju pievienošana
+    addEventListeners();
+    calculateTotal();
+});
+</script>
+{% endblock %}
+{% endblock %}
