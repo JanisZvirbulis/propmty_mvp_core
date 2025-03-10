@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rēķins {{ invoice.number }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_list' company.slug %}">Rēķini</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ invoice.number }}</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Rēķins {{ invoice.number }}</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if is_company_admin %}
+                        <div class="btn-group me-2">
+                            <a href="{% url 'invoices:invoice_print' company.slug invoice.id %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="bi bi-printer"></i> Drukāt
+                            </a>
+                            
+                            {% if invoice.status == 'draft' %}
+                            <a href="{% url 'invoices:invoice_edit' company.slug invoice.id %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Rediģēt
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="btn-group">
+                            {% if invoice.status == 'draft' or invoice.status == 'sent' or invoice.status == 'overdue' %}
+                            <a href="{% url 'invoices:invoice_send' company.slug invoice.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-envelope"></i> Nosūtīt
+                            </a>
+                            {% endif %}
+                            
+                            {% if invoice.status == 'sent' or invoice.status == 'overdue' %}
+                            <a href="{% url 'invoices:invoice_mark_paid' company.slug invoice.id %}" class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle"></i> Atzīmēt kā apmaksātu
+                            </a>
+                            {% endif %}
+                            
+                            {% if invoice.status != 'paid' and invoice.status != 'cancelled' %}
+                            <a href="{% url 'invoices:invoice_cancel' company.slug invoice.id %}" class="btn btn-sm btn-danger">
+                                <i class="bi bi-x-circle"></i> Atcelt
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <a href="{% url 'invoices:invoice_print' company.slug invoice.id %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                            <i class="bi bi-printer"></i> Drukāt
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Statusa josla -->
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <div class="d-flex align-items-center p-3">
+                        <div class="me-3">
+                            {% if invoice.status == 'draft' %}
+                            <span class="badge bg-secondary p-2">
+                                <i class="bi bi-pencil-square fs-4"></i>
+                            </span>
+                            {% elif invoice.status == 'sent' %}
+                            <span class="badge bg-primary p-2">
+                                <i class="bi bi-envelope fs-4"></i>
+                            </span>
+                            {% elif invoice.status == 'paid' %}
+                            <span class="badge bg-success p-2">
+                                <i class="bi bi-check-circle fs-4"></i>
+                            </span>
+                            {% elif invoice.status == 'overdue' %}
+                            <span class="badge bg-danger p-2">
+                                <i class="bi bi-exclamation-triangle fs-4"></i>
+                            </span>
+                            {% elif invoice.status == 'cancelled' %}
+                            <span class="badge bg-warning p-2">
+                                <i class="bi bi-x-circle fs-4"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-0">
+                                Status: 
+                                {% if invoice.status == 'draft' %}
+                                <span class="badge bg-secondary">Melnraksts</span>
+                                {% elif invoice.status == 'sent' %}
+                                <span class="badge bg-primary">Nosūtīts</span>
+                                {% elif invoice.status == 'paid' %}
+                                <span class="badge bg-success">Apmaksāts</span>
+                                {% elif invoice.status == 'overdue' %}
+                                <span class="badge bg-danger">Kavēts</span>
+                                {% elif invoice.status == 'cancelled' %}
+                                <span class="badge bg-warning">Atcelts</span>
+                                {% endif %}
+                            </h5>
+                            <p class="mb-0 text-muted">
+                                {% if invoice.is_sent %}
+                                Nosūtīts: {{ invoice.sent_date|date:"d.m.Y H:i" }}
+                                {% endif %}
+                                
+                                {% if invoice.paid_date %}
+                                | Apmaksāts: {{ invoice.paid_date|date:"d.m.Y H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Rēķina informācija -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Rēķina informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Numurs:</dt>
+                                <dd class="col-sm-8">{{ invoice.number }}</dd>
+                                
+                                <dt class="col-sm-4">Datums:</dt>
+                                <dd class="col-sm-8">{{ invoice.issue_date|date:"d.m.Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Apmaksas termiņš:</dt>
+                                <dd class="col-sm-8">{{ invoice.due_date|date:"d.m.Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Kopsumma:</dt>
+                                <dd class="col-sm-8">{{ invoice.total_amount }} €</dd>
+                                
+                                {% if invoice.notes %}
+                                <dt class="col-sm-4">Piezīmes:</dt>
+                                <dd class="col-sm-8">{{ invoice.notes }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Klienta informācija -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Klienta informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if invoice.lease.tenant %}
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Klients:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.tenant.get_full_name }}</dd>
+                                
+                                <dt class="col-sm-4">E-pasts:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.tenant.email }}</dd>
+                                
+                                {% if invoice.lease.tenant.phone %}
+                                <dt class="col-sm-4">Telefons:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.tenant.phone }}</dd>
+                                {% endif %}
+                                
+                                <dt class="col-sm-4">Īpašums:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.unit.property.address|capfirst }}</dd>
+                                
+                                <dt class="col-sm-4">Telpa:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.unit.unit_number }}</dd>
+                            </dl>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-person-x fs-1 text-muted"></i>
+                                </div>
+                                <h5>Nav īrnieka</h5>
+                                <p class="text-muted">Šim līgumam nav piesaistīts īrnieks.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rēķina pozīcijas -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Rēķina pozīcijas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Apraksts</th>
+                                    <th class="text-end">Daudzums</th>
+                                    <th class="text-end">Cena</th>
+                                    <th class="text-end">Summa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td class="text-end">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ item.unit_price }} €</td>
+                                    <td class="text-end">{{ item.amount }} €</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Kopā:</th>
+                                    <th class="text-end">{{ invoice.total_amount }} €</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

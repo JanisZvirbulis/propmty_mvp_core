@@ -10,6 +10,8 @@ urlpatterns = [
     path('issues/report/<uuid:lease_id>/', views.report_issue, name='report_issue'),
     path('issues/<uuid:issue_id>/', views.tenant_issue_detail, name='tenant_issue_detail'),
     path('meter_readings/', views.tenant_meter_readings, name='meter_readings'),
+    path('invoices/', views.tenant_invoices, name='tenant_invoices'),
+    path('invoices/<uuid:invoice_id>/', views.tenant_invoice_detail, name='tenant_invoice_detail'),
     path('meter_readings/<uuid:lease_id>/<uuid:meter_id>/submit/', views.submit_reading, name='submit_reading'),
     path('meter_readings/<uuid:lease_id>/<uuid:meter_id>/history/', views.unit_meter_readings_history, name='readings_history'),
 ]

@@ -7,6 +7,7 @@ from .forms import TenantRegistrationForm, IssueReportForm
 from inspections.models import Issue, IssueImage
 from properties.forms import MeterReadingForm
 from properties.models import UnitMeter
+from invoices.models import Invoice
 
 
 def lease_invitation(request, token):
@@ -360,4 +361,61 @@ def tenant_issue_detail(request, issue_id):
     return render(request, 'tenant_portal/issue_detail.html', {
         'issue': issue,
         'active_page': 'tenant_issues',
+    })
+
+@login_required
+def tenant_invoices(request):
+    """Parāda īrnieka rēķinus"""
+    # Pārbaudam vai lietotājs ir īrnieks
+    if request.user.role != 'tenant':
+        messages.error(request, 'Jums nav piekļuves īrnieka rēķinu panelim.')
+        return redirect('users:home')
+    
+    # Atrodam visus īrnieka rēķinus
+    invoices = Invoice.objects.filter(
+        lease__tenant=request.user
+    ).select_related(
+        'lease', 'lease__unit', 'lease__unit__property', 'company'
+    ).order_by('-issue_date')
+    
+    # Filtri
+    status = request.GET.get('status')
+    if status:
+        invoices = invoices.filter(status=status)
+    
+    # Sadalīsim rēķinus pa kategorijām
+    unpaid_invoices = invoices.filter(status__in=['sent', 'overdue'])
+    paid_invoices = invoices.filter(status='paid')
+    other_invoices = invoices.filter(status__in=['draft', 'cancelled'])
+    
+    return render(request, 'tenant_portal/tenant_invoices.html', {
+        'unpaid_invoices': unpaid_invoices,
+        'paid_invoices': paid_invoices,
+        'other_invoices': other_invoices,
+        'active_page': 'tenant_invoices',
+        'filters': {
+            'status': status
+        }
+    })
+
+@login_required
+def tenant_invoice_detail(request, invoice_id):
+    """Parāda detalizētu īrnieka rēķina informāciju"""
+    # Pārbaudam vai lietotājs ir īrnieks
+    if request.user.role != 'tenant':
+        messages.error(request, 'Jums nav piekļuves īrnieka rēķinu panelim.')
+        return redirect('users:home')
+    
+    # Atrodam rēķinu
+    invoice = get_object_or_404(Invoice.objects.select_related(
+        'lease', 'lease__unit', 'lease__unit__property', 'company'
+    ), id=invoice_id, lease__tenant=request.user)
+    
+    # Iegūstam rēķina pozīcijas
+    items = invoice.items.all()
+    
+    return render(request, 'tenant_portal/tenant_invoice_detail.html', {
+        'invoice': invoice,
+        'items': items,
+        'active_page': 'tenant_invoices'
     })

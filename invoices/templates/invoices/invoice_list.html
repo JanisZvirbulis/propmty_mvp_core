@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rēķini - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Rēķini</h1>
+                
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle me-2" data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel"></i> Filtri
+                    </button>
+                    <div class="dropdown-menu p-3" style="width: 300px;">
+                        <form method="get">
+                            <div class="mb-3">
+                                <label class="form-label">Statuss</label>
+                                <select name="status" class="form-select">
+                                    <option value="">Visi</option>
+                                    <option value="draft" {% if filters.status == 'draft' %}selected{% endif %}>Melnraksts</option>
+                                    <option value="sent" {% if filters.status == 'sent' %}selected{% endif %}>Nosūtīts</option>
+                                    <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>Apmaksāts</option>
+                                    <option value="overdue" {% if filters.status == 'overdue' %}selected{% endif %}>Kavēts</option>
+                                    <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>Atcelts</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Līgums</label>
+                                <select name="lease" class="form-select">
+                                    <option value="">Visi</option>
+                                    {% for lease in active_leases %}
+                                    <option value="{{ lease.id }}" {% if filters.lease_id == lease.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ lease.unit.property.address }} - {{ lease.unit.unit_number }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Datums no</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from|default:'' }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Datums līdz</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to|default:'' }}">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Filtrēt</button>
+                                <a href="{% url 'invoices:invoice_list' company.slug %}" class="btn btn-outline-secondary">Notīrīt</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rēķinu saraksts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    {% if invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Numurs</th>
+                                    <th>Īpašums/Telpa</th>
+                                    <th>Īrnieks</th>
+                                    <th>Summa</th>
+                                    <th>Datums</th>
+                                    <th>Apmaksas termiņš</th>
+                                    <th>Statuss</th>
+                                    <th>Darbības</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in invoices %}
+                                <tr>
+                                    <td>{{ invoice.number }}</td>
+                                    <td>
+                                        {{ invoice.lease.unit.property.address|capfirst }} - {{ invoice.lease.unit.unit_number }}
+                                    </td>
+                                    <td>
+                                        {% if invoice.lease.tenant %}
+                                            {{ invoice.lease.tenant.get_full_name }}
+                                        {% else %}
+                                            <span class="badge bg-warning">Nav īrnieka</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ invoice.total_amount }} €</td>
+                                    <td>{{ invoice.issue_date|date:"d.m.Y" }}</td>
+                                    <td>{{ invoice.due_date|date:"d.m.Y" }}</td>
+                                    <td>
+                                        {% if invoice.status == 'draft' %}
+                                            <span class="badge bg-secondary">Melnraksts</span>
+                                        {% elif invoice.status == 'sent' %}
+                                            <span class="badge bg-primary">Nosūtīts</span>
+                                        {% elif invoice.status == 'paid' %}
+                                            <span class="badge bg-success">Apmaksāts</span>
+                                        {% elif invoice.status == 'overdue' %}
+                                            <span class="badge bg-danger">Kavēts</span>
+                                        {% elif invoice.status == 'cancelled' %}
+                                            <span class="badge bg-warning">Atcelts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}" class="btn btn-outline-primary" title="Skatīt">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if invoice.status == 'draft' %}
+                                            <a href="{% url 'invoices:invoice_edit' company.slug invoice.id %}" class="btn btn-outline-secondary" title="Rediģēt">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-receipt fs-1 text-muted"></i>
+                        </div>
+                        <h4>Nav atrasti rēķini</h4>
+                        <p class="text-muted">Izmantojot filtrus, mēģiniet izmainīt meklēšanas kritērijus vai izveidojiet jaunu rēķinu.</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <h5>Izveidot jaunu rēķinu</h5>
+                        <p>Izvēlieties īres līgumu, lai izveidotu jaunu rēķinu:</p>
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-2">
+                            {% for lease in active_leases %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ lease.unit.property.address|capfirst }}</h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">{{ lease.unit.unit_number }}</h6>
+                                        <p class="card-text">
+                                            {% if lease.tenant %}
+                                                <strong>Īrnieks:</strong> {{ lease.tenant.get_full_name }}<br>
+                                                <strong>Īres maksa:</strong> {{ lease.rent_amount }} €/mēn.
+                                            {% else %}
+                                                <span class="badge bg-warning">Nav īrnieka</span>
+                                            {% endif %}
+                                        </p>
+                                        {% if lease.tenant %}
+                                        <a href="{% url 'invoices:invoice_create' company.slug lease.id %}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                                        </a>
+                                        {% else %}
+                                        <button class="btn btn-secondary" disabled>
+                                            <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    Nav aktīvu īres līgumu. Vispirms izveidojiet īres līgumu ar īrnieku.
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

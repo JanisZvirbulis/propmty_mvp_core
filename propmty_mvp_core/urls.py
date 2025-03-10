@@ -28,5 +28,6 @@ urlpatterns = [
     path('<slug:company_slug>/properties/', include('properties.urls')),
     path('<slug:company_slug>/leases/', include('leases.urls')),
     path('<slug:company_slug>/inspections/', include('inspections.urls')),
+    path('<slug:company_slug>/invoices/', include('invoices.urls')),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
