@@ -6,7 +6,7 @@ from django.db import transaction
 from django.conf import settings
 from core.decorators import tenant_required
 from .models import Invoice, InvoiceItem
-from .forms import InvoiceForm, InvoiceItemFormSet
+from .forms import InvoiceForm
 from leases.models import Lease
 from inspections.models import Maintenance
 from properties.models import UnitMeter, MeterReading
@@ -138,17 +138,21 @@ def invoice_create(request, company_slug, lease_id):
             # Aprēķinam patēriņu (jaunākais rādījums - vecākais rādījums)
             consumption = readings[0].reading - readings[1].reading
             
-            # Pieņemsim, ka katram skaitītāja tipam ir noteikts tarifs
-            tariffs = {
-                'water_cold': Decimal('1.20'),
-                'water_hot': Decimal('4.50'),
-                'gas': Decimal('0.65'),
-                'electricity': Decimal('0.15'),
-                'heating': Decimal('60.00')
-            }
+            # Izmantojam tarifu no mērītāja datu bāzes, ar noklusējuma vērtībām, ja tarifs nav iestatīts
+            tariff = meter.tariff
             
-            if meter.meter_type in tariffs and consumption > 0:
-                tariff = tariffs[meter.meter_type]
+            # Ja tarifs nav iestatīts, izmantojam noklusējuma vērtības
+            if tariff == 0:
+                default_tariffs = {
+                    'water_cold': Decimal('1.20'),
+                    'water_hot': Decimal('4.50'),
+                    'gas': Decimal('0.65'),
+                    'electricity': Decimal('0.15'),
+                    'heating': Decimal('60.00')
+                }
+                tariff = default_tariffs.get(meter.meter_type, Decimal('0.00'))
+            
+            if consumption > 0:
                 amount = consumption * tariff
                 
                 meter_type_display = meter.get_meter_type_display()
@@ -205,7 +209,7 @@ def invoice_create(request, company_slug, lease_id):
             if form.is_valid():
                 try:
                     with transaction.atomic():
-                        # Vispirms izveidojam rēķinu
+                        # Vispirms izveidojam rēķinu, bet vēl nesaglabājam
                         invoice = form.save(commit=False)
                         invoice.company = company
                         invoice.lease = lease
@@ -224,15 +228,25 @@ def invoice_create(request, company_slug, lease_id):
                         # Aprēķinam kopējo summu
                         total_amount = Decimal('0.00')
                         
-                        # Saglabājam rēķinu
-                        invoice.save()
+                        # Pagaidām nesaglabājam rēķinu, lai izvairītos no not-null ierobežojuma problēmas
+                        # Saglabāsim tikai pēc kopējās summas aprēķināšanas
                         
-                        # Pievienojam atlasītās pozīcijas
+                        # Aprēķinam kopējo summu no atlasītajām pozīcijām
                         for item_data in selected_items:
                             quantity = Decimal(str(item_data['quantity']))
                             unit_price = Decimal(str(item_data['unit_price']))
                             amount = quantity * unit_price
                             total_amount += amount
+                        
+                        # Tagad iestatām kopējo summu un saglabājam rēķinu
+                        invoice.total_amount = total_amount
+                        invoice.save()
+                        
+                        # Pēc tam pievienojam visas pozīcijas
+                        for item_data in selected_items:
+                            quantity = Decimal(str(item_data['quantity']))
+                            unit_price = Decimal(str(item_data['unit_price']))
+                            amount = quantity * unit_price
                             
                             # Izveidojam un saglabājam pozīciju
                             item = InvoiceItem(
@@ -245,14 +259,13 @@ def invoice_create(request, company_slug, lease_id):
                             )
                             item.save()
                         
-                        # Atjauninam rēķina kopējo summu
-                        invoice.total_amount = total_amount
-                        invoice.save(update_fields=['total_amount'])
-                        
                         messages.success(request, f"Rēķins Nr. {invoice.number} veiksmīgi izveidots.")
                         return redirect('invoices:invoice_detail', company_slug=company_slug, pk=invoice.id)
-                except Exception as e:
-                    messages.error(request, f"Kļūda izveidojot rēķinu: {str(e)}")
+                except Exception as e:   
+                    print(f"Invoice creation error: {str(e)}")
+                    # Cilvēkam saprotams kļūdas ziņojums
+                    messages.error(request, "Kļūda izveidojot rēķinu. Lūdzu, pārbaudiet ievadītos datus un mēģiniet vēlreiz.")
+                    
             else:
                 messages.error(request, "Lūdzu, izlabojiet kļūdas formā.")
         else:

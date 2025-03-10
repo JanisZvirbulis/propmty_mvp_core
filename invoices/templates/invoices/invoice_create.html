@@ -126,7 +126,7 @@
                                                 <td class="text-center">{{ item.quantity }}</td>
                                                 <td class="text-end">{{ item.unit_price }} €</td>
                                                 <td class="text-end item-total">
-                                                    {{ item.quantity|floatformat:2|default:"0.00" }} €
+                                                    {{ item.unit_price|floatformat:2|default:"0.00" }} €
                                                 </td>
                                             </tr>
                                             {% endfor %}

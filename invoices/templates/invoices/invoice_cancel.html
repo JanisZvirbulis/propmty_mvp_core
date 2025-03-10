@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Atcelt rēķinu {{ invoice.number }} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_list' company.slug %}">Rēķini</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}">{{ invoice.number }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Atcelt rēķinu</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">Atcelt rēķinu</h5>
+                        </div>
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-x-circle-fill text-warning" style="font-size: 4rem;"></i>
+                            </div>
+                            
+                            <h4 class="mb-4">Vai tiešām vēlaties atcelt šo rēķinu?</h4>
+                            
+                            <div class="alert alert-warning mb-4">
+                                <p class="mb-0">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Atcelts rēķins vairs nebūs aktīvs, un to nevarēs vairs nosūtīt vai rediģēt.
+                                </p>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-body text-start">
+                                    <h5 class="card-title border-bottom pb-2 mb-3">Rēķina informācija</h5>
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Rēķina numurs:</dt>
+                                        <dd class="col-sm-8">{{ invoice.number }}</dd>
+                                        
+                                        <dt class="col-sm-4">Datums:</dt>
+                                        <dd class="col-sm-8">{{ invoice.issue_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Apmaksas termiņš:</dt>
+                                        <dd class="col-sm-8">{{ invoice.due_date|date:"d.m.Y" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Summa:</dt>
+                                        <dd class="col-sm-8">{{ invoice.total_amount }} €</dd>
+                                        
+                                        <dt class="col-sm-4">Īpašums:</dt>
+                                        <dd class="col-sm-8">{{ invoice.lease.unit.property.address }} - {{ invoice.lease.unit.unit_number }}</dd>
+                                        
+                                        <dt class="col-sm-4">Īrnieks:</dt>
+                                        <dd class="col-sm-8">{{ invoice.lease.tenant.get_full_name|default:"Nav īrnieka" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Statuss:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if invoice.status == 'draft' %}
+                                            <span class="badge bg-secondary">Melnraksts</span>
+                                            {% elif invoice.status == 'sent' %}
+                                            <span class="badge bg-primary">Nosūtīts</span>
+                                            {% elif invoice.status == 'overdue' %}
+                                            <span class="badge bg-danger">Kavēts</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="confirm_cancel" value="yes">
+                                
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="bi bi-x-circle me-2"></i> Apstiprināt atcelšanu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

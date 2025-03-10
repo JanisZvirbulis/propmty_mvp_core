@@ -83,12 +83,15 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Datums</th>
-                                    <th>Īpašums</th>
+                                    <th>Adrese</th>
                                     <th>Telpa</th>
-                                    <th>Skaitītājs</th>
+                                    <th>Mērītāja veids</th>
+                                    <th>Numurs</th>
                                     <th>Rādījums</th>
-                                    <th>Iesniedzējs</th>
+                                    <!-- Pievienota tarifa kolonna -->
+                                    <th>Tarifs (€/vienība)</th>
+                                    <th>Datums</th>
+                                    <th>Iesniedza</th>
                                     <th>Statuss</th>
                                     <th>Darbības</th>
                                 </tr>
@@ -96,11 +99,14 @@
                             <tbody>
                                 {% for reading in readings %}
                                 <tr>
-                                    <td>{{ reading.reading_date|date:"d.m.Y" }}</td>
                                     <td>{{ reading.meter.unit.property.address|capfirst }}</td>
                                     <td>{{ reading.meter.unit.unit_number }}</td>
                                     <td>{{ reading.meter.get_meter_type_display }}</td>
+                                    <td>{{ reading.meter.meter_number }}</td>
                                     <td>{{ reading.reading }}</td>
+                                    <!-- Tarifa vērtība -->
+                                    <td>{{ reading.meter.tariff }} €</td>
+                                    <td>{{ reading.reading_date|date:"d.m.Y" }}</td>
                                     <td>{{ reading.submitted_by.get_full_name }}</td>
                                     <td>
                                         {% if reading.is_verified %}
@@ -110,20 +116,19 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'properties:unit_meter_detail' company.slug reading.meter.unit.property.id reading.meter.unit.id reading.meter.id %}" class="btn btn-outline-primary" title="Skatīt">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            
-                                            {% if not reading.is_verified %}
-                                            <form method="post" action="{% url 'properties:verify_meter_reading' company.slug reading.id %}">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-outline-success" title="Verificēt">
-                                                    <i class="bi bi-check-lg"></i>
-                                                </button>
-                                            </form>
-                                            {% endif %}
-                                        </div>
+                                        {% if not reading.is_verified %}
+                                        <form method="post" action="{% url 'properties:verify_meter_reading' company.slug reading.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Verificēt">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'properties:unit_meter_detail' company.slug reading.meter.unit.property.id reading.meter.unit.id reading.meter.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Skatīt mērītāju">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}

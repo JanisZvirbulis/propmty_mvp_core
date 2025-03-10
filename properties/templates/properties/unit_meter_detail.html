@@ -72,6 +72,8 @@
                                     <span class="badge bg-warning">{{ meter.get_status_display }}</span>
                                     {% endif %}
                                 </dd>
+                                <dt class="col-sm-4">Tarifs:</dt>
+                                <dd class="col-sm-8">{{ meter.tariff }} €/vienība</dd>
                                 
                                 <dt class="col-sm-4">Derīguma termiņš:</dt>
                                 <dd class="col-sm-8">{% if meter.expire_date %}{{ meter.expire_date|date:"d.m.Y" }}{% else %}-{% endif %}</dd>

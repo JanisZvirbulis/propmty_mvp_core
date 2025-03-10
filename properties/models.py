@@ -102,6 +102,10 @@ class UnitMeter(TenantModel):
     ], default='active')
     expire_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    
+    # Pievienojam tarifa lauku
+    tariff = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, 
+                               help_text="Tarifs par vienu vienību (€)")
 
     class Meta:
         unique_together = ['unit', 'meter_type', 'meter_number']

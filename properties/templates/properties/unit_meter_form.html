@@ -47,7 +47,7 @@
                                     <div class="col-md-6">
                                         <dl class="row">
                                             <dt class="col-sm-4">Adrese:</dt>
-                                            <dd class="col-sm-8">{{ property.address }}</dd>
+                                            <dd class="col-sm-8">{{ property.address|capfirst }}</dd>
                                             
                                             <dt class="col-sm-4">Telpa:</dt>
                                             <dd class="col-sm-8">{{ unit.unit_number }}</dd>
@@ -91,7 +91,16 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                    
+
+                                    <div class="mb-3">
+                                        <label for="{{ form.tariff.id_for_label }}" class="form-label">Tarifs (€/vienība) *</label>
+                                        {{ form.tariff }}
+                                        {% if form.tariff.errors %}
+                                            <div class="text-danger">{{ form.tariff.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Norādiet tarifa likmi par vienu patēriņa vienību (piemēram, €/kWh, €/m³)</div>
+                                    </div>
+
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label for="{{ form.status.id_for_label }}" class="form-label">Statuss *</label>

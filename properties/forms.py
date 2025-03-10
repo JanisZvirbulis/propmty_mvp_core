@@ -45,17 +45,17 @@ class UnitForm(forms.ModelForm):
             'parking_spots': forms.NumberInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
-
-
+        
 class UnitMeterForm(forms.ModelForm):
     class Meta:
         model = UnitMeter
-        fields = ['meter_type', 'meter_number', 'status', 'expire_date', 'notes']
+        fields = ['meter_type', 'meter_number', 'status', 'expire_date', 'tariff', 'notes']
         widgets = {
             'meter_type': forms.Select(attrs={'class': 'form-select'}),
             'meter_number': forms.TextInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'expire_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tariff': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
@@ -76,6 +76,18 @@ class UnitMeterForm(forms.ModelForm):
             if not valid_choices:
                 self.fields['meter_type'].choices = [('', '--- Visi mērītāju tipi jau ir pievienoti ---')]
                 self.fields['meter_type'].help_text = 'Lai pievienotu jaunu mērītāju, vispirms deaktivizējiet esošo.'
+                
+        # Pievienojam noklusējuma tarifus atkarībā no mērītāja tipa
+        if not self.instance.pk and self.instance.meter_type:
+            default_tariffs = {
+                'water_cold': 1.20,
+                'water_hot': 4.50,
+                'gas': 0.65,
+                'electricity': 0.15,
+                'heating': 60.00
+            }
+            if self.instance.meter_type in default_tariffs:
+                self.fields['tariff'].initial = default_tariffs[self.instance.meter_type]
 
 class MeterReadingForm(forms.ModelForm):
     class Meta:
