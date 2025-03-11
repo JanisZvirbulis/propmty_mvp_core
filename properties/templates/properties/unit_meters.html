@@ -15,7 +15,7 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'properties:property_list' company.slug %}">Īpašumi</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' company.slug property.id %}">{{ property.address|capfirst }}</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'properties:unit_detail' company.slug property.id unit.id %}">{{ unit.unit_number }}</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Skaitītāji</li>
                     </ol>

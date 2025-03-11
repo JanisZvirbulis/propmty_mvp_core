@@ -4,7 +4,16 @@
 {% block title %}Skaitītāju rādījumi - Propmty{% endblock %}
 
 {% block content %}
+{% include 'partials/navbar.html'%}
 <div class="container py-4">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tenant_portal:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item actice" aria-current="page">Skaitītāju rādījumi</li>
+            </ol>
+        </nav>
+    </div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
         <h1 class="h2">Skaitītāju rādījumi</h1>
         <div class="btn-toolbar mb-2 mb-md-0">

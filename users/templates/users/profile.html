@@ -4,7 +4,9 @@
 {% block title %}Mans profils - Propmty{% endblock %}
 
 {% block content %}
+{% include 'partials/navbar.html'%}
 <div class="container mt-4">
+
     <div class="row">
         <div class="col-md-4">
             <div class="card shadow mb-4">
@@ -12,7 +14,7 @@
                     <h5 class="mb-0">Mans profils</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -38,6 +40,20 @@
                         <div class="mb-3">
                             <label for="{{ form.personal_code.id_for_label }}" class="form-label">Personas kods</label>
                             {{ form.personal_code }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.profile_image.id_for_label }}" class="form-label">Profile bilde</label>
+                            {% if request.user.profile_image %}
+                                <div class="mb-2">
+                                    <img src="{{ request.user.profile_image.url }}" alt="Profile image" class="img-thumbnail" style="max-height: 100px;">
+                                </div>
+                            {% endif %}
+                            {{ form.profile_image }}
+                            {% if form.profile_image.errors %}
+                                <div class="text-danger">{{ form.profile_image.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Ieteicamais izmērs: 500x200 pikseļi. Maksimālais izmērs: 2MB.</div>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">Saglabāt izmaiņas</button>

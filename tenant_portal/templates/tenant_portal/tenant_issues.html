@@ -6,6 +6,14 @@
 {% block content %}
 {% include 'partials/navbar.html'%}
 <div class="container py-4">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tenant_portal:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item actice">Problēmas</li>
+            </ol>
+        </nav>
+    </div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
         <h1 class="h2">Manas problēmas</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -17,7 +25,7 @@
                     {% for lease in leases %}
                     <li>
                         <a class="dropdown-item" href="{% url 'tenant_portal:report_issue' lease.id %}">
-                            {{ lease.unit.property.address }} - {{ lease.unit.unit_number }}
+                            {{ lease.unit.property.address|capfirst }} - {{ lease.unit.unit_number }}
                         </a>
                     </li>
                     {% empty %}

@@ -14,6 +14,7 @@ class User(AbstractUser):
     personal_code = models.CharField(max_length=50, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True,)
 
     # Pievienojam related_name
     groups = models.ManyToManyField(
