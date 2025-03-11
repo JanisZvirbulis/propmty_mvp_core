@@ -78,6 +78,23 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_start.id_for_label }}" class="form-label">Rēķina perioda sākums</label>
+                                        {{ form.period_start }}
+                                        {% if form.period_start.errors %}
+                                            <div class="text-danger">{{ form.period_start.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_end.id_for_label }}" class="form-label">Rēķina perioda beigas</label>
+                                        {{ form.period_end }}
+                                        {% if form.period_end.errors %}
+                                            <div class="text-danger">{{ form.period_end.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                                 
                                 <div class="mb-3">
                                     <label for="{{ form.notes.id_for_label }}" class="form-label">Piezīmes</label>
@@ -123,7 +140,7 @@
                                                     </div>
                                                 </td>
                                                 <td>{{ item.description }}</td>
-                                                <td class="text-center">{{ item.quantity }}</td>
+                                                <td class="text-center quantity">{{ item.quantity }}</td>
                                                 <td class="text-end">{{ item.unit_price }} €</td>
                                                 <td class="text-end item-total">
                                                     {{ item.unit_price|floatformat:2|default:"0.00" }} €
@@ -178,9 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (checkbox.checked) {
                 const row = checkbox.closest('tr');
                 const amountText = row.querySelector('.item-total').textContent;
+                const quantity = parseFloat(row.querySelector('.text-center').textContent);
                 const amount = parseFloat(amountText);
                 if (!isNaN(amount)) {
-                    total += amount;
+                    total += amount*quantity;
                 }
             }
         });

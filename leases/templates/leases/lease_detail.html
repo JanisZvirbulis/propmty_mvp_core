@@ -49,7 +49,7 @@
                             <i class="bi bi-plus-circle"></i> Darbības
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Izveidot rēķinu</a></li>
+                            <li><a class="dropdown-item" href="{% url 'invoices:invoice_create' company.slug lease.id %}">Izveidot rēķinu</a></li>
                             <li><a class="dropdown-item" href="#">Pievienot dokumentu</a></li>
                         </ul>
                     </div>
@@ -290,13 +290,13 @@
                         <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
                             <h5 class="mb-0">Rēķini</h5>
                             {% if lease.status == 'active' %}
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="bi bi-plus-circle"></i> Izveidot rēķinu
-                            </button>
+                                <a href="{% url 'invoices:invoice_create' company.slug lease.id %}" class="btn btn-sm btn-outline-light">
+                                    <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                                </a>       
                             {% endif %}
                         </div>
                         <div class="card-body">
-                            {% if lease.billings.all %}
+                            {% if invoices %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -309,27 +309,27 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for billing in lease.billings.all %}
+                                        {% for invoice in invoices %}
                                         <tr>
-                                            <td>{{ billing.period_start|date:"d.m.Y" }} - {{ billing.period_end|date:"d.m.Y" }}</td>
-                                            <td>{{ billing.total_amount }} €</td>
-                                            <td>{{ billing.due_date|date:"d.m.Y" }}</td>
+                                            <td>{{ invoice.period_start|date:"d.m.Y" }} - {{ invoice.period_end|date:"d.m.Y" }}</td>
+                                            <td>{{ invoice.total_amount }} €</td>
+                                            <td>{{ invoice.due_date|date:"d.m.Y" }}</td>
                                             <td>
-                                                {% if billing.status == 'draft' %}
+                                                {% if invoice.status == 'draft' %}
                                                 <span class="badge bg-secondary">Melnraksts</span>
-                                                {% elif billing.status == 'sent' %}
+                                                {% elif invoice.status == 'sent' %}
                                                 <span class="badge bg-primary">Nosūtīts</span>
-                                                {% elif billing.status == 'paid' %}
+                                                {% elif invoice.status == 'paid' %}
                                                 <span class="badge bg-success">Apmaksāts</span>
-                                                {% elif billing.status == 'overdue' %}
+                                                {% elif invoice.status == 'overdue' %}
                                                 <span class="badge bg-danger">Kavēts</span>
-                                                {% elif billing.status == 'cancelled' %}
+                                                {% elif invoice.status == 'cancelled' %}
                                                 <span class="badge bg-warning">Atcelts</span>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="#" class="btn btn-outline-primary">
+                                                    <a href="{% url 'invoices:invoice_detail' company.slug invoice.id %}" class="btn btn-outline-primary">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
                                                 </div>

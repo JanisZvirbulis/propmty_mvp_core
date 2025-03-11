@@ -5,6 +5,8 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from functools import wraps
 from django.conf import settings
+from datetime import date, datetime, timedelta
+import calendar
 
 def send_lease_invitation_email(invitation):
     subject = 'Invitation to sign lease agreement'
@@ -92,6 +94,24 @@ def send_invoice_email(invoice, tenant, company, view_url):
     email.send()
     
     return True
+
+def get_previous_month():
+    today = date.today()
+
+    # Iepriekšējais mēnesis un gads
+    prev_month = today.month - 1 if today.month > 1 else 12
+    prev_year = today.year if today.month > 1 else today.year - 1
+
+    # Iepriekšējā mēneša pirmā diena
+    period_start = date(prev_year, prev_month, 1)
+
+    # Iepriekšējā mēneša pēdējā diena
+    last_day = calendar.monthrange(prev_year, prev_month)[1]
+    period_end = date(prev_year, prev_month, last_day)
+
+    return period_start, period_end
+
+
 
 def tenant_required(view_func):
     @wraps(view_func)

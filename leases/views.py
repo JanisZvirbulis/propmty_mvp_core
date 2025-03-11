@@ -151,10 +151,13 @@ def lease_detail(request, company_slug, pk):
     except TenantInvitation.DoesNotExist:
         invitation = None
     
+    invoices = lease.invoices.all()[:5]
+    
     return render(request, 'leases/lease_detail.html', {
         'lease': lease,
         'company': company,
         'invitation': invitation,
+        'invoices': invoices,
         'active_page': 'tenant_leases'
     })
 

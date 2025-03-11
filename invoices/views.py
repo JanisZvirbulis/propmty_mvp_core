@@ -100,6 +100,7 @@ def invoice_create(request, company_slug, lease_id):
     # Meklējam, vai jau ir šī mēneša rēķins
     existing_invoice = Invoice.objects.filter(
         lease=lease,
+        status__in=['Sent', 'Paid', 'OverDue'],
         issue_date__gte=current_month_start,
         issue_date__lt=next_month_start
     ).first()

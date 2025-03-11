@@ -8,6 +8,8 @@ class Invoice(TenantModel):
     number = models.CharField(max_length=50)  # Rēķina numurs
     lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='invoices')
     issue_date = models.DateField()
+    period_start = models.DateField(default=timezone.now)
+    period_end = models.DateField(default=timezone.now)
     due_date = models.DateField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[

@@ -8,6 +8,7 @@ from inspections.models import Issue, IssueImage
 from properties.forms import MeterReadingForm
 from properties.models import UnitMeter
 from invoices.models import Invoice
+from leases.models import Lease
 
 
 def lease_invitation(request, token):
@@ -128,18 +129,59 @@ def tenant_register(request, token):
 
 @login_required
 def tenant_dashboard(request):
-    # Tikai īrniekam var būt piekļuve šai lapai
-    if request.user.role != 'tenant':
-        messages.error(request, 'Jums nav piekļuves īrnieka panelim.')
-        return redirect('users:home')
+    # Iegūstam īrnieka aktīvos līgumus
+    active_leases = Lease.objects.filter(
+        tenant=request.user,
+        status='active'
+    ).select_related(
+        'unit', 
+        'unit__property', 
+        'unit__property__manager', 
+        'company'
+    ).order_by('start_date')
     
-    # Atrodam visus aktīvos līgumus priekš šī īrnieka
-    leases = request.user.leases.filter(status='active')
+    # Iegūstam aktīvos remonta pieteikumus (maksimums 5)
+    active_issues = Issue.objects.filter(
+        reported_by=request.user
+    ).select_related(
+        'unit',
+        'unit__property'
+    ).exclude(
+        status__in=['resolved', 'closed']
+    ).order_by('-created_at')[:5]
     
-    return render(request, 'tenant_portal/dashboard.html', {
-        'leases': leases,
-        'active_page': 'tenant_dashboard',
-    })
+    # Iegūstam skaitītājus no visiem īrētajiem īpašumiem
+    unit_ids = [lease.unit.id for lease in active_leases]
+    meters = UnitMeter.objects.filter(
+        unit_id__in=unit_ids,
+        status='active'
+    ).select_related(
+        'unit',
+        'unit__property'
+    ).prefetch_related(
+        'readings'
+    ).order_by('meter_type')
+    
+    # Katram skaitītājam pievienojam pēdējo rādījumu
+    for meter in meters:
+        meter.last_reading = meter.readings.order_by('-reading_date').first()
+    
+    # Iegūstam pēdējos 5 rēķinus
+    recent_invoices = Invoice.objects.filter(
+        lease__tenant=request.user
+    ).select_related(
+        'lease'
+    ).order_by('-issue_date')[:5]
+    
+    context = {
+        'active_leases': active_leases,
+        'active_issues': active_issues,
+        'meters': meters,
+        'recent_invoices': recent_invoices,
+        'user': request.user
+    }
+    
+    return render(request, 'tenant_portal/dashboard.html', context)
 
 
 @login_required
