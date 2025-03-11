@@ -137,18 +137,18 @@ def tenant_dashboard(request):
         'unit', 
         'unit__property', 
         'unit__property__manager', 
-        'company'
+        'company',
+        'company__owner'
     ).order_by('start_date')
     
-    # Iegūstam aktīvos remonta pieteikumus (maksimums 5)
+    # Iegūstam aktīvos remonta pieteikumus
     active_issues = Issue.objects.filter(
-        reported_by=request.user
+        reported_by=request.user,
+        status__in=['reported', 'assigned', 'in_progress']
     ).select_related(
         'unit',
         'unit__property'
-    ).exclude(
-        status__in=['resolved', 'closed']
-    ).order_by('-created_at')[:5]
+    ).order_by('-created_at')
     
     # Iegūstam skaitītājus no visiem īrētajiem īpašumiem
     unit_ids = [lease.unit.id for lease in active_leases]
@@ -166,17 +166,30 @@ def tenant_dashboard(request):
     for meter in meters:
         meter.last_reading = meter.readings.order_by('-reading_date').first()
     
-    # Iegūstam pēdējos 5 rēķinus
+    # Iegūstam neapmaksātos rēķinus
+    unpaid_invoices = Invoice.objects.filter(
+        lease__tenant=request.user,
+        status__in=['sent', 'overdue']
+    ).select_related(
+        'lease',
+        'lease__unit',
+        'lease__unit__property'
+    ).order_by('-issue_date')
+    
+    # Iegūstam jaunākos rēķinus (visi rēķini no visiem līgumiem)
     recent_invoices = Invoice.objects.filter(
         lease__tenant=request.user
     ).select_related(
-        'lease'
-    ).order_by('-issue_date')[:5]
+        'lease',
+        'lease__unit',
+        'lease__unit__property'
+    ).order_by('-issue_date')[:10]  # Ierobežojam kopējo rēķinu skaitu
     
     context = {
         'active_leases': active_leases,
         'active_issues': active_issues,
         'meters': meters,
+        'unpaid_invoices': unpaid_invoices,
         'recent_invoices': recent_invoices,
         'user': request.user
     }

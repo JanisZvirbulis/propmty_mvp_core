@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load tenant_filters %}
 {% block title %}Īrnieka panelis - Propmty{% endblock %}
 
 {% block content %}
@@ -15,212 +15,414 @@
         </div>
     </div>
     
-    <!-- Īrnieka pārskats -->
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Mani īpašumi</h5>
-                </div>
-                <div class="card-body">
-                    {% if leases %}
-                        {% for lease in leases %}
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h5 class="mb-1">{{ lease.unit.property.address|capfirst }}</h5>
-                                        <p class="mb-0 text-muted">
-                                            {{ lease.unit.unit_number }} 
-                                            <span class="ms-2 small">({{ lease.company.name }})</span>
-                                        </p>
-                                    </div>
-                                    <span class="badge bg-success">Aktīvs līgums</span>
-                                </div>
-                                
-                                <hr>
-                                
-                                <div class="row mt-3">
-                                    <div class="col-md-4">
-                                        <div class="mb-2">
-                                            <small class="text-muted">Īres maksa</small>
-                                            <h5 class="mb-0">{{ lease.rent_amount }} €/mēn.</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="mb-2">
-                                            <small class="text-muted">Termiņš</small>
-                                            <h5 class="mb-0">{{ lease.end_date|date:"d.m.Y" }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <a href="#" class="btn btn-outline-primary w-100">
-                                            <i class="bi bi-eye"></i> Skatīt detaļas
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <div class="mb-3">
-                                <i class="bi bi-house-x fs-1 text-muted"></i>
-                            </div>
-                            <h5>Nav aktīvu īres līgumu</h5>
-                            <p class="text-muted">Jums pašlaik nav aktīvu īres līgumu šajā platformā.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Pēdējie rēķini -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Pēdējie rēķini</h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center py-4">
-                        <div class="mb-3">
-                            <i class="bi bi-receipt fs-1 text-muted"></i>
-                        </div>
-                        <h5>Nav atrasti rēķini</h5>
-                        <p class="text-muted">Jums pašlaik nav aktīvu rēķinu.</p>
+    <!-- Kopsavilkums / Statistika -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-house-door fs-1 text-primary"></i>
                     </div>
+                    <h5>Īres līgumi</h5>
+                    <h2 class="mb-0">{{ active_leases|length }}</h2>
+                    <small class="text-muted">Aktīvi līgumi</small>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4">
-            <!-- Skaitītāju rādījumi -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Skaitītāju rādījumi</h5>
-                    <a href="{% url 'tenant_portal:meter_readings' %}" class="btn btn-sm btn-outline-light">
-                        <i class="bi bi-list-ul"></i> Skatīt visus
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if leases %}
-                        {% with upcoming_readings=0 %}
-                            {% for lease in leases %}
-                                {% for meter in lease.unit.meters.filter.active %}
-                                    {% with last_reading=meter.readings.first %}
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <div>
-                                            <h6 class="mb-0">{{ meter.get_meter_type_display }}</h6>
-                                            <small class="text-muted">{{ lease.unit.property.address }} - {{ lease.unit.unit_number }}</small>
-                                        </div>
-                                        
-                                        <div class="d-flex align-items-center">
-                                            {% if last_reading %}
-                                            <div class="me-3 text-end">
-                                                <span class="d-block">{{ last_reading.reading }}</span>
-                                                <small class="text-muted">{{ last_reading.reading_date|date:"d.m.Y" }}</small>
-                                            </div>
-                                            {% else %}
-                                            <div class="me-3 text-end">
-                                                <span class="badge bg-warning">Nav rādījumu</span>
-                                            </div>
-                                            {% endif %}
-                                            
-                                            <a href="{% url 'tenant_portal:submit_reading' lease.id meter.id %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-plus-circle"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                    {% endwith %}
-                                {% endfor %}
-                            {% endfor %}
-                        {% endwith %}
-                    {% else %}
-                        <div class="text-center py-3">
-                            <p class="text-muted mb-0">Nav aktīvu skaitītāju</p>
-                        </div>
-                    {% endif %}
-                    
-                    <div class="mt-3 text-center">
-                        <a href="{% url 'tenant_portal:meter_readings' %}" class="btn btn-primary">
-                            <i class="bi bi-speedometer me-2"></i> Pārvaldīt skaitītāju rādījumus
-                        </a>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-speedometer fs-1 text-info"></i>
                     </div>
+                    <h5>Skaitītāji</h5>
+                    <h2 class="mb-0">{{ meters|length }}</h2>
+                    <small class="text-muted">Aktīvi skaitītāji</small>
                 </div>
             </div>
-            
-            <!-- Remonta pieteikumi -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Remonta pieteikumi</h5>
-                    <a href="{% url 'tenant_portal:tenant_issues' %}" class="btn btn-sm btn-outline-light">
-                        <i class="bi bi-list-ul"></i> Skatīt visus
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="text-center py-4">
-                        <div class="mb-3">
-                            <i class="bi bi-tools fs-1 text-muted"></i>
-                        </div>
-                        <h5>Pārvaldiet problēmu pieteikumus</h5>
-                        <p class="text-muted">Ziņojiet par problēmām savā īpašumā un sekojiet līdzi to risināšanai.</p>
-                        <a href="{% url 'tenant_portal:tenant_issues' %}" class="btn btn-primary">
-                            <i class="bi bi-exclamation-triangle me-2"></i> Ziņot par problēmu
-                        </a>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
                     </div>
+                    <h5>Problēmas</h5>
+                    <h2 class="mb-0">{{ active_issues|length }}</h2>
+                    <small class="text-muted">Aktīvi pieteikumi</small>
                 </div>
             </div>
-            
-            <!-- Kontakti -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Kontakti</h5>
-                </div>
-                <div class="card-body">
-                    {% if leases.exists %}
-                        {% for lease in leases %}
-                            {% if lease.unit.property.manager %}
-                            <div class="mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
-                                <h6>{{ lease.company.name }}</h6>
-                                <div class="d-flex align-items-center mt-2">
-                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                        style="width: 40px; height: 40px; font-size: 16px;">
-                                        {{ lease.unit.property.manager.first_name|first }}{{ lease.unit.property.manager.last_name|first }}
-                                    </div>
-                                    <div>
-                                        <p class="mb-0">{{ lease.unit.property.manager.get_full_name }}</p>
-                                        <small class="text-muted">{{ lease.unit.property.manager.email }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-3">
-                            <div class="mb-3">
-                                <i class="bi bi-person-x fs-1 text-muted"></i>
-                            </div>
-                            <h5>Nav kontaktu</h5>
-                            <p class="text-muted mb-0">Šeit parādīsies jūsu īres īpašumu pārvaldnieki.</p>
-                        </div>
-                    {% endif %}
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-receipt fs-1 text-danger"></i>
+                    </div>
+                    <h5>Rēķini</h5>
+                    <h2 class="mb-0">{{ recent_invoices|length }}</h2>
+                    <small class="text-muted">Neapmaksāti rēķini</small>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Dokumenti -->
+    <!-- Īres līgumu akordeoni -->
+    {% if active_leases %}
+    <div class="accordion mb-4" id="leaseAccordion">
+        {% for lease in active_leases %}
+        <div class="accordion-item mb-3 shadow-sm">
+            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button {% if forloop.counter > 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.counter == 1 %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+                    <div class="d-flex justify-content-between align-items-center w-100 pe-3">
+                        <div>
+                            <strong>{{ lease.unit.property.address|capfirst }}</strong> - {{ lease.unit.unit_number }}
+                        </div>
+                        <span class="badge bg-success">Aktīvs līgums</span>
+                    </div>
+                </button>
+            </h2>
+            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#leaseAccordion">
+                <div class="accordion-body">
+                    <div class="row">
+                        <!-- Līguma detaļas -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Līguma informācija</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <dl class="row mb-0">
+                                                <dt class="col-sm-5">Adrese:</dt>
+                                                <dd class="col-sm-7">{{ lease.unit.property.address|capfirst }}</dd>
+                                                
+                                                <dt class="col-sm-5">Telpa:</dt>
+                                                <dd class="col-sm-7">{{ lease.unit.unit_number }}</dd>
+                                                
+                                                <dt class="col-sm-5">Platība:</dt>
+                                                <dd class="col-sm-7">{{ lease.unit.area }} m²</dd>
+                                            </dl>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <dl class="row mb-0">
+                                                <dt class="col-sm-6">Īres maksa:</dt>
+                                                <dd class="col-sm-6">{{ lease.rent_amount }} €/mēn.</dd>
+                                                
+                                                <dt class="col-sm-6">Sākuma datums:</dt>
+                                                <dd class="col-sm-6">{{ lease.start_date|date:"d.m.Y" }}</dd>
+                                                
+                                                <dt class="col-sm-6">Beigu datums:</dt>
+                                                <dd class="col-sm-6">{{ lease.end_date|date:"d.m.Y" }}</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Ātrās darbības -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Ātrie pakalpojumi</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6 mb-3">
+                                            <a href="{% url 'tenant_portal:report_issue' lease.id %}" class="btn btn-warning w-100 h-100 d-flex flex-column justify-content-center py-3">
+                                                <i class="bi bi-exclamation-triangle fs-3 mb-2"></i>
+                                                <span>Ziņot par problēmu</span>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <a href="{% url 'tenant_portal:tenant_invoices' %}" class="btn btn-success w-100 h-100 d-flex flex-column justify-content-center py-3">
+                                                <i class="bi bi-receipt fs-3 mb-2"></i>
+                                                <span>Skatīt rēķinus</span>
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="{% url 'tenant_portal:meter_readings' %}" class="btn btn-info w-100 h-100 d-flex flex-column justify-content-center py-3 text-white">
+                                                <i class="bi bi-speedometer fs-3 mb-2"></i>
+                                                <span>Iesniegt rādījumus</span>
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="{% url 'tenant_portal:tenant_issues' %}" class="btn btn-secondary w-100 h-100 d-flex flex-column justify-content-center py-3">
+                                                <i class="bi bi-tools fs-3 mb-2"></i>
+                                                <span>Manas problēmas</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Skaitītāji šim īres līgumam -->
+                        {% with lease_meters=meters|filter_by_property:lease.unit.id %}
+                        {% if lease_meters %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Skaitītāju rādījumi</h5>
+                                    <a href="{% url 'tenant_portal:meter_readings' %}" class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-list-ul"></i> Skatīt visus
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    {% for meter in lease_meters %}
+                                        <div class="d-flex justify-content-between align-items-center mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                                            <div>
+                                                <h6 class="mb-0">{{ meter.get_meter_type_display }}</h6>
+                                                <small class="text-muted">{{ meter.meter_number }}</small>
+                                            </div>
+                                            
+                                            <div class="d-flex align-items-center">
+                                                {% if meter.last_reading %}
+                                                <div class="me-3 text-end">
+                                                    <span class="d-block fw-bold">{{ meter.last_reading.reading }}</span>
+                                                    <small class="text-muted">{{ meter.last_reading.reading_date|date:"d.m.Y" }}</small>
+                                                </div>
+                                                {% else %}
+                                                <div class="me-3 text-end">
+                                                    <span class="badge bg-warning">Nav rādījumu</span>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <a href="{% url 'tenant_portal:submit_reading' lease.id meter.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    
+                                    <div class="mt-3 text-center">
+                                        <a href="{% url 'tenant_portal:meter_readings' %}" class="btn btn-primary">
+                                            <i class="bi bi-speedometer me-2"></i> Pārvaldīt skaitītāju rādījumus
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <!-- Neapmaksātie rēķini šim īres līgumam -->
+                        {% with lease_invoices=recent_invoices|filter_by_lease:lease.id %}
+                        {% if lease_invoices %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Pēdējie rēķini</h5>
+                                    <a href="{% url 'tenant_portal:tenant_invoices' %}" class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-list-ul"></i> Skatīt visus
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group">
+                                        {% for invoice in lease_invoices %}
+                                            <a href="{% url 'tenant_portal:tenant_invoice_detail' invoice.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0">{{ invoice.number }}</h6>
+                                                    <small class="text-muted">Termiņš: {{ invoice.due_date|date:"d.m.Y" }}</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="fw-bold d-block">{{ invoice.total_amount }} €</span>
+                                                    {% if invoice.status == 'sent' %}
+                                                    <span class="badge bg-primary">Nosūtīts</span>
+                                                    {% elif invoice.status == 'overdue' %}
+                                                    <span class="badge bg-danger">Kavēts</span>
+                                                    {% elif invoice.status == 'paid' %}
+                                                    <span class="badge bg-success">Apmaksāts</span>
+                                                    {% endif %}
+                                                </div>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <!-- Aktīvās problēmas šim īres līgumam -->
+                        {% with lease_issues=active_issues|filter_by_property:lease.unit.id %}
+                        {% if lease_issues %}
+                        <div class="col-md-12 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Aktīvās problēmas</h5>
+                                    <a href="{% url 'tenant_portal:tenant_issues' %}" class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-list-ul"></i> Skatīt visas
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Problēmas tips</th>
+                                                    <th>Prioritāte</th>
+                                                    <th>Datums</th>
+                                                    <th>Statuss</th>
+                                                    <th>Darbības</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for issue in lease_issues %}
+                                                <tr>
+                                                    <td>{{ issue.get_issue_type_display }}</td>
+                                                    <td>
+                                                        {% if issue.priority == 'low' %}
+                                                        <span class="badge bg-success">Zema</span>
+                                                        {% elif issue.priority == 'medium' %}
+                                                        <span class="badge bg-info">Vidēja</span>
+                                                        {% elif issue.priority == 'high' %}
+                                                        <span class="badge bg-warning">Augsta</span>
+                                                        {% elif issue.priority == 'critical' %}
+                                                        <span class="badge bg-danger">Kritiska</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ issue.created_at|date:"d.m.Y" }}</td>
+                                                    <td>
+                                                        {% if issue.status == 'reported' %}
+                                                        <span class="badge bg-secondary">Ziņota</span>
+                                                        {% elif issue.status == 'assigned' %}
+                                                        <span class="badge bg-info">Piešķirta</span>
+                                                        {% elif issue.status == 'in_progress' %}
+                                                        <span class="badge bg-primary">Procesā</span>
+                                                        {% elif issue.status == 'resolved' %}
+                                                        <span class="badge bg-success">Atrisināta</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'tenant_portal:tenant_issue_detail' issue.id %}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-eye"></i> Skatīt
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <!-- Kontaktinformācija -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Kontaktpersona</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if lease.unit.property.manager %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                            style="width: 50px; height: 50px; font-size: 18px;">
+                                            {{ lease.unit.property.manager.first_name|first }}{{ lease.unit.property.manager.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">{{ lease.unit.property.manager.get_full_name }}</h5>
+                                            <p class="mb-0"><i class="bi bi-envelope me-2"></i>{{ lease.unit.property.manager.email }}</p>
+                                            {% if lease.unit.property.manager.phone %}
+                                            <p class="mb-0"><i class="bi bi-telephone me-2"></i>{{ lease.unit.property.manager.phone }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                            style="width: 50px; height: 50px; font-size: 18px;">
+                                            {{ lease.company.owner.first_name|first }}{{ lease.company.owner.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">{{ lease.company.owner.get_full_name }}</h5>
+                                            <p class="mb-0"><i class="bi bi-envelope me-2"></i>{{ lease.company.owner.email }}</p>
+                                            {% if lease.company.owner.phone %}
+                                            <p class="mb-0"><i class="bi bi-telephone me-2"></i>{{ lease.company.owner.phone }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-3">
+            <i class="bi bi-house-x fs-1 text-muted"></i>
+        </div>
+        <h4>Nav aktīvu īres līgumu</h4>
+        <p class="text-muted">Jums pašlaik nav aktīvu īres līgumu šajā platformā.</p>
+    </div>
+    {% endif %}
+    
+    <!-- Pēdējie paziņojumi / ziņas -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Mani dokumenti</h5>
+            <h5 class="mb-0">Pēdējie paziņojumi</h5>
         </div>
         <div class="card-body">
             <div class="text-center py-4">
                 <div class="mb-3">
-                    <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                    <i class="bi bi-bell fs-1 text-muted"></i>
                 </div>
-                <h5>Nav dokumentu</h5>
-                <p class="text-muted">Šeit būs pieejami visi jūsu līguma un citi saistītie dokumenti.</p>
+                <h5>Nav jaunu paziņojumu</h5>
+                <p class="text-muted">Jūs saņemsiet paziņojumus par svarīgiem notikumiem saistībā ar jūsu īres līgumiem.</p>
             </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pielāgot skata atvēršanu, balstoties uz URL parametriem
+    const urlParams = new URLSearchParams(window.location.search);
+    const leaseId = urlParams.get('lease');
+    
+    if (leaseId) {
+        // Ja norādīts lease_id, atveram šo akordeonu
+        const accordionButtons = document.querySelectorAll('.accordion-button');
+        accordionButtons.forEach((button, index) => {
+            const collapseId = `collapse${index + 1}`;
+            const collapse = document.getElementById(collapseId);
+            
+            // Ja atrodam pareizo līgumu, atveram to
+            if (collapse && collapse.querySelector(`[data-lease-id="${leaseId}"]`)) {
+                button.classList.remove('collapsed');
+                button.setAttribute('aria-expanded', 'true');
+                collapse.classList.add('show');
+            } else if (index === 0) {
+                // Aizveram pirmo, ja tas nav meklētais
+                button.classList.add('collapsed');
+                button.setAttribute('aria-expanded', 'false');
+                collapse.classList.remove('show');
+            }
+        });
+    }
+    
+    // Refresh pogas funkcionalitāte
+    const refreshButton = document.getElementById('refreshButton');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            location.reload();
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}
