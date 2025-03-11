@@ -1,7 +1,6 @@
 from django import forms
 from .models import Invoice, InvoiceItem, Tax
 from django.utils import timezone
-from utils.utils import get_previous_month
 import datetime
 
 class InvoiceForm(forms.ModelForm):
@@ -23,11 +22,6 @@ class InvoiceForm(forms.ModelForm):
             self.fields['issue_date'].initial = timezone.now().date()
             # Maksājuma termiņš pēc noklusējuma ir 14 dienas
             self.fields['due_date'].initial = (timezone.now().date() + datetime.timedelta(days=14))
-            period_start, period_end = get_previous_month()
-            print(period_start)
-            print(period_end)
-            self.fields['period_start'].initial = period_start
-            self.fields['period_end'].initial = period_end
 
 class TaxForm(forms.ModelForm):
     class Meta:

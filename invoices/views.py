@@ -12,6 +12,7 @@ from inspections.models import Maintenance
 from properties.models import UnitMeter, MeterReading
 import datetime
 from decimal import Decimal
+from utils.utils import get_previous_month
 
 @login_required
 @tenant_required
@@ -85,17 +86,18 @@ def invoice_create(request, company_slug, lease_id):
     
     # Pārbaudām, vai ir jau izveidots rēķins šim mēnesim
     today = timezone.now().date()
-    current_month_start = today.replace(day=1)
-    
-    # Ja šis ir decembris, nākamais mēnesis ir janvāris nākamajā gadā
+    current_month_start = timezone.make_aware(datetime.datetime(today.year, today.month, 1))
+
+    # Aprēķina nākamā mēneša sākuma datumu
     if today.month == 12:
         next_month = 1
         next_month_year = today.year + 1
     else:
         next_month = today.month + 1
         next_month_year = today.year
-    
-    next_month_start = datetime.date(next_month_year, next_month, 1)
+
+    # Izveido nākamā mēneša sākuma datumu ar laika zonu
+    next_month_start = timezone.make_aware(datetime.datetime(next_month_year, next_month, 1))
     
     # Meklējam, vai jau ir šī mēneša rēķins
     existing_invoice = Invoice.objects.filter(
@@ -273,9 +275,13 @@ def invoice_create(request, company_slug, lease_id):
             messages.error(request, "Nederīgs pieprasījums.")
     else:
         # Noklusējuma vērtības jaunam rēķinam
+        period_start, period_end = get_previous_month()
         form = InvoiceForm(initial={
             'issue_date': today,
-            'due_date': today + datetime.timedelta(days=14)
+            'due_date': today + datetime.timedelta(days=14),
+            'period_start': period_start,
+            'period_end': period_end,
+
         })
     
     return render(request, 'invoices/invoice_create.html', {
