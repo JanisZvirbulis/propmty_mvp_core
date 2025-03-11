@@ -93,7 +93,7 @@
                         </div>
                         <div>
                             <h5 class="mb-0">
-                                Status: 
+                                Statuss: 
                                 {% if invoice.status == 'draft' %}
                                 <span class="badge bg-secondary">Melnraksts</span>
                                 {% elif invoice.status == 'sent' %}
@@ -138,8 +138,17 @@
                                 <dt class="col-sm-4">Apmaksas termiņš:</dt>
                                 <dd class="col-sm-8">{{ invoice.due_date|date:"d.m.Y" }}</dd>
                                 
+                                <dt class="col-sm-4">Periods:</dt>
+                                <dd class="col-sm-8">{{ invoice.period_start|date:"d.m.Y" }} - {{ invoice.period_end|date:"d.m.Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Summa bez PVN:</dt>
+                                <dd class="col-sm-8">{{ invoice.subtotal_amount }} €</dd>
+                                
+                                <dt class="col-sm-4">Nodokļi:</dt>
+                                <dd class="col-sm-8">{{ invoice.tax_amount }} €</dd>
+                                
                                 <dt class="col-sm-4">Kopsumma:</dt>
-                                <dd class="col-sm-8">{{ invoice.total_amount }} €</dd>
+                                <dd class="col-sm-8"><strong>{{ invoice.total_amount }} €</strong></dd>
                                 
                                 {% if invoice.notes %}
                                 <dt class="col-sm-4">Piezīmes:</dt>
@@ -175,6 +184,9 @@
                                 
                                 <dt class="col-sm-4">Telpa:</dt>
                                 <dd class="col-sm-8">{{ invoice.lease.unit.unit_number }}</dd>
+                                
+                                <dt class="col-sm-4">Īres maksa:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.rent_amount }} €/mēnesī</dd>
                             </dl>
                             {% else %}
                             <div class="text-center py-4">
@@ -201,24 +213,54 @@
                             <thead>
                                 <tr>
                                     <th>Apraksts</th>
-                                    <th class="text-end">Daudzums</th>
+                                    <th class="text-center">Daudzums</th>
                                     <th class="text-end">Cena</th>
-                                    <th class="text-end">Summa</th>
+                                    <th class="text-center">Nodoklis</th>
+                                    <th class="text-end">Summa bez nodokļa</th>
+                                    <th class="text-end">Nodokļa summa</th>
+                                    <th class="text-end">Kopā</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in items %}
                                 <tr>
                                     <td>{{ item.description }}</td>
-                                    <td class="text-end">{{ item.quantity }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
                                     <td class="text-end">{{ item.unit_price }} €</td>
+                                    <td class="text-center">
+                                        {% if item.tax %}
+                                            {{ item.tax.name }} ({{ item.tax.rate }}%)
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% with subtotal=item.amount|default:0 %}
+                                            {% if item.tax %}
+                                                {% with subtotal=item.amount|default:0|floatformat:2 %}
+                                                    {{ subtotal }} €
+                                                {% endwith %}
+                                            {% else %}
+                                                {{ item.amount|floatformat:2 }} €
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.tax %}
+                                            {{ item.tax_amount|floatformat:2 }} €
+                                        {% else %}
+                                            0.00 €
+                                        {% endif %}
+                                    </td>
                                     <td class="text-end">{{ item.amount }} €</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="3" class="text-end">Kopā:</th>
+                                    <th colspan="4" class="text-end">Kopā bez nodokļiem:</th>
+                                    <th class="text-end">{{ invoice.subtotal_amount }} €</th>
+                                    <th class="text-end">{{ invoice.tax_amount }} €</th>
                                     <th class="text-end">{{ invoice.total_amount }} €</th>
                                 </tr>
                             </tfoot>
@@ -226,6 +268,37 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Maksājuma informācija -->
+            {% if invoice.status == 'sent' or invoice.status == 'overdue' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Maksājuma informācija</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Apmaksas termiņš:</strong> {{ invoice.due_date|date:"d.m.Y" }}</p>
+                            <p><strong>Saņēmējs:</strong> {{ company.name }}</p>
+                            {% if company.registration_number %}
+                            <p><strong>Reģ. Nr.:</strong> {{ company.registration_number }}</p>
+                            {% endif %}
+                            {% if company.vat_number %}
+                            <p><strong>PVN Nr.:</strong> {{ company.vat_number }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <p class="mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Veicot maksājumu, obligāti norādiet rēķina numuru: <strong>{{ invoice.number }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </main>
     </div>
 </div>

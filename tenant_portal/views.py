@@ -178,7 +178,8 @@ def tenant_dashboard(request):
     
     # Iegūstam jaunākos rēķinus (visi rēķini no visiem līgumiem)
     recent_invoices = Invoice.objects.filter(
-        lease__tenant=request.user
+        lease__tenant=request.user,
+        status__in=['sent', 'paid', 'overdue']
     ).select_related(
         'lease',
         'lease__unit',
@@ -441,7 +442,7 @@ def tenant_invoices(request):
     # Sadalīsim rēķinus pa kategorijām
     unpaid_invoices = invoices.filter(status__in=['sent', 'overdue'])
     paid_invoices = invoices.filter(status='paid')
-    other_invoices = invoices.filter(status__in=['draft', 'cancelled'])
+    other_invoices = invoices.filter(status__in=['overdue', 'cancelled'])
     
     return render(request, 'tenant_portal/tenant_invoices.html', {
         'unpaid_invoices': unpaid_invoices,

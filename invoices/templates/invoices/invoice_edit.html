@@ -26,7 +26,7 @@
             </div>
             
             <div class="row">
-                <!-- Rēķina pamatinformācija -->
+                <!-- Līguma informācijas bloks -->
                 <div class="col-md-4 mb-4">
                     <div class="card shadow-sm">
                         <div class="card-header bg-primary text-white">
@@ -45,16 +45,21 @@
                                 
                                 <dt class="col-sm-4">Īres maksa:</dt>
                                 <dd class="col-sm-8">{{ invoice.lease.rent_amount }} €/mēnesī</dd>
+                                
+                                <dt class="col-sm-4">Līguma termiņš:</dt>
+                                <dd class="col-sm-8">{{ invoice.lease.start_date|date:"d.m.Y" }} - {{ invoice.lease.end_date|date:"d.m.Y" }}</dd>
                             </dl>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Rēķina rediģēšanas forma -->
                 <div class="col-md-8">
                     <form method="post" id="invoiceForm">
                         {% csrf_token %}
                         <input type="hidden" name="save_changes" value="1">
                         
+                        <!-- Rēķina pamatinformācija -->
                         <div class="card shadow-sm mb-4">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">Rēķina pamatinformācija</h5>
@@ -77,6 +82,23 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_start.id_for_label }}" class="form-label">Rēķina perioda sākums</label>
+                                        {{ form.period_start }}
+                                        {% if form.period_start.errors %}
+                                            <div class="text-danger">{{ form.period_start.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_end.id_for_label }}" class="form-label">Rēķina perioda beigas</label>
+                                        {{ form.period_end }}
+                                        {% if form.period_end.errors %}
+                                            <div class="text-danger">{{ form.period_end.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                                 
                                 <div class="mb-3">
                                     <label for="{{ form.notes.id_for_label }}" class="form-label">Piezīmes</label>
@@ -88,71 +110,132 @@
                             </div>
                         </div>
                         
+                        <!-- Rēķina pozīcijas -->
                         <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">Rēķina pozīcijas</h5>
-                                <button type="button" class="btn btn-sm btn-light" id="addItemBtn">
-                                    <i class="bi bi-plus-circle"></i> Pievienot pozīciju
-                                </button>
                             </div>
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table" id="itemsTable">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 45%;">Apraksts</th>
-                                                <th class="text-center" style="width: 15%;">Daudzums</th>
-                                                <th class="text-center" style="width: 15%;">Cena (€)</th>
-                                                <th class="text-center" style="width: 15%;">Summa (€)</th>
-                                                <th class="text-center" style="width: 10%;">Darbības</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for item in invoice_items %}
-                                            <tr class="item-row">
-                                                <td>
-                                                    <input type="text" name="description_{{ item.id }}" value="{{ item.description }}" class="form-control description-input" required>
-                                                </td>
-                                                <td>
-                                                    <input type="number" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="0.01" step="0.01" class="form-control quantity-input text-center" required>
-                                                </td>
-                                                <td>
-                                                    <input type="number" name="unit_price_{{ item.id }}" value="{{ item.unit_price }}" min="0.01" step="0.01" class="form-control unit-price-input text-center" required>
-                                                </td>
-                                                <td class="text-end">
-                                                    <span class="amount">{{ item.amount }}</span> €
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input delete-checkbox" type="checkbox" name="delete_{{ item.id }}" id="delete_{{ item.id }}">
-                                                        <label class="form-check-label" for="delete_{{ item.id }}">
-                                                            <i class="bi bi-trash text-danger"></i>
-                                                        </label>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="3" class="text-end">Kopā:</th>
-                                                <th class="text-end total-amount">{{ invoice.total_amount }} €</th>
-                                                <th></th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                                <!-- Esošo pozīciju saraksts -->
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Esošās pozīcijas</h6>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Apraksts</th>
+                                                    <th style="width: 110px;">Daudzums</th>
+                                                    <th style="width: 120px;">Cena (€)</th>
+                                                    <th style="width: 150px;">Nodoklis</th>
+                                                    <th style="width: 110px;">Summa (€)</th>
+                                                    <th style="width: 80px;">Dzēst</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="itemsTable">
+                                                {% for item in invoice_items %}
+                                                <tr class="item-row">
+                                                    <td>
+                                                        <input type="text" name="description_{{ item.id }}" 
+                                                               value="{{ item.description }}" 
+                                                               class="form-control form-control-sm" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" name="quantity_{{ item.id }}" 
+                                                               value="{{ item.quantity }}" min="0.01" step="0.01" 
+                                                               class="form-control form-control-sm item-quantity"
+                                                               onchange="updateItemAmount(this)"
+                                                               data-id="{{ item.id }}">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" name="unit_price_{{ item.id }}" 
+                                                               value="{{ item.unit_price }}" min="0.01" step="0.01" 
+                                                               class="form-control form-control-sm item-price"
+                                                               onchange="updateItemAmount(this)"
+                                                               data-id="{{ item.id }}">
+                                                    </td>
+                                                    <td>
+                                                        <select name="tax_{{ item.id }}" 
+                                                                class="form-select form-select-sm item-tax"
+                                                                onchange="updateItemAmount(this)"
+                                                                data-id="{{ item.id }}">
+                                                            <option value="">Nav nodokļa</option>
+                                                            {% for tax in taxes %}
+                                                            <option value="{{ tax.id }}" data-rate="{{ tax.rate }}"
+                                                                    {% if item.tax_id == tax.id %}selected{% endif %}>
+                                                                {{ tax.name }} ({{ tax.rate }}%)
+                                                            </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <span class="item-amount">{{ item.amount|floatformat:2 }}</span> €
+                                                        <input type="hidden" name="amount_{{ item.id }}" 
+                                                              value="{{ item.amount|floatformat:2 }}" 
+                                                              class="item-amount-input">
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input delete-checkbox" 
+                                                                   type="checkbox" 
+                                                                   name="delete_{{ item.id }}" 
+                                                                   id="delete_{{ item.id }}"
+                                                                   onchange="updateTotalAmount(); toggleDeletedRow(this);">
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                                 
-                                <div id="newItemsContainer">
-                                    <!-- Šeit tiks pievienotas jaunas rindas ar JavaScript -->
+                                <!-- Pievienot papildu pozīcijas -->
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Pievienot jaunu pozīciju</h6>
+                                    
+                                    <div id="newItemsContainer">
+                                        <!-- Šeit ar JS tiks pievienotas jaunas rindas -->
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-outline-primary" id="addItemBtn">
+                                            <i class="bi bi-plus-circle"></i> Pievienot pozīciju
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="new_item_count" id="newItemCount" value="0">
                                 </div>
-                                <input type="hidden" name="new_item_count" id="newItemCount" value="0">
+                                
+                                <!-- Kopsumma -->
+                                <div class="card">
+                                    <div class="card-body bg-light">
+                                        <div class="row justify-content-end">
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="fw-bold">Summa bez nodokļiem:</span>
+                                                    <span id="subtotalAmount">0.00 €</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="fw-bold">Nodokļi:</span>
+                                                    <span id="taxAmount">0.00 €</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-0">
+                                                    <span class="fw-bold">Kopējā summa:</span>
+                                                    <span class="fw-bold" id="totalAmount">0.00 €</span>
+                                                </div>
+                                                <input type="hidden" name="subtotal_amount" id="subtotalAmountInput" value="0.00">
+                                                <input type="hidden" name="tax_amount" id="taxAmountInput" value="0.00">
+                                                <input type="hidden" name="total_amount" id="totalAmountInput" value="0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="alert alert-info mb-4">
                             <i class="bi bi-info-circle me-2"></i> 
-                            Lai dzēstu pozīciju, atzīmējiet izvēles rūtiņu pozīcijas labajā pusē. Lai pievienotu jaunu pozīciju, izmantojiet pogu "Pievienot pozīciju".
+                            Lai dzēst pozīciju, atzīmējiet izvēles rūtiņu pozīcijas labajā pusē. Lai pievienotu jaunu pozīciju, izmantojiet pogu "Pievienot pozīciju".
                             Kopējā summa tiks automātiski aprēķināta, pamatojoties uz visām pozīcijām.
                         </div>
                         
@@ -174,119 +257,262 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Funkcija summas aprēķināšanai
-    function calculateAmount(row) {
-        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
-        const unitPrice = parseFloat(row.querySelector('.unit-price-input').value) || 0;
-        const amount = (quantity * unitPrice).toFixed(2);
-        row.querySelector('.amount').textContent = amount;
-        return parseFloat(amount);
+    // Skaitītājs jaunām pozīcijām
+    let newItemIndex = 0;
+    
+    // Funkcija rēķina pozīcijas summas aprēķināšanai
+    function updateItemAmount(element) {
+        const row = element.closest('tr');
+        const quantityInput = row.querySelector('.item-quantity');
+        const priceInput = row.querySelector('.item-price');
+        const taxSelect = row.querySelector('.item-tax');
+        const amountSpan = row.querySelector('.item-amount');
+        const amountInput = row.querySelector('.item-amount-input');
+        
+        if (!quantityInput || !priceInput || !amountSpan || !amountInput) return;
+        
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const taxOption = taxSelect.options[taxSelect.selectedIndex];
+        const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+        
+        const subtotal = quantity * price;
+        const taxAmount = subtotal * (taxRate / 100);
+        const total = subtotal + taxAmount;
+        
+        amountSpan.textContent = total.toFixed(2);
+        amountInput.value = total.toFixed(2);
+        
+        // Pārrēķinām kopējo summu
+        updateTotalAmount();
     }
     
     // Funkcija kopējās summas aprēķināšanai
-    function calculateTotal() {
+    function updateTotalAmount() {
+        let subtotal = 0;
+        let taxTotal = 0;
         let total = 0;
         
-        // Aprēķinam esošās pozīcijas, kas nav atzīmētas dzēšanai
-        document.querySelectorAll('.item-row').forEach(row => {
+        // Aprēķinām esošās pozīcijas, kas nav atzīmētas dzēšanai
+        document.querySelectorAll('#itemsTable tr').forEach(row => {
             const deleteCheckbox = row.querySelector('.delete-checkbox');
-            if (!deleteCheckbox.checked) {
-                total += calculateAmount(row);
+            if (!deleteCheckbox || !deleteCheckbox.checked) {
+                const quantityInput = row.querySelector('.item-quantity');
+                const priceInput = row.querySelector('.item-price');
+                const taxSelect = row.querySelector('.item-tax');
+                
+                if (quantityInput && priceInput) {
+                    const quantity = parseFloat(quantityInput.value) || 0;
+                    const price = parseFloat(priceInput.value) || 0;
+                    const taxOption = taxSelect.options[taxSelect.selectedIndex];
+                    const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+                    
+                    const itemSubtotal = quantity * price;
+                    const itemTax = itemSubtotal * (taxRate / 100);
+                    
+                    subtotal += itemSubtotal;
+                    taxTotal += itemTax;
+                    total += (itemSubtotal + itemTax);
+                }
             }
         });
         
-        // Aprēķinam jaunās pozīcijas
-        document.querySelectorAll('.new-item-row').forEach(row => {
-            total += calculateAmount(row);
+        // Aprēķinām jaunās pozīcijas
+        document.querySelectorAll('#newItemsContainer tr').forEach(row => {
+            const quantityInput = row.querySelector('.new-item-quantity');
+            const priceInput = row.querySelector('.new-item-price');
+            const taxSelect = row.querySelector('.new-item-tax');
+            
+            if (quantityInput && priceInput) {
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const taxOption = taxSelect.options[taxSelect.selectedIndex];
+                const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+                
+                const itemSubtotal = quantity * price;
+                const itemTax = itemSubtotal * (taxRate / 100);
+                
+                subtotal += itemSubtotal;
+                taxTotal += itemTax;
+                total += (itemSubtotal + itemTax);
+            }
         });
         
-        document.querySelector('.total-amount').textContent = total.toFixed(2) + ' €';
+        // Atjauninām lauku vērtības
+        document.getElementById('subtotalAmount').textContent = subtotal.toFixed(2) + ' €';
+        document.getElementById('taxAmount').textContent = taxTotal.toFixed(2) + ' €';
+        document.getElementById('totalAmount').textContent = total.toFixed(2) + ' €';
+        
+        document.getElementById('subtotalAmountInput').value = subtotal.toFixed(2);
+        document.getElementById('taxAmountInput').value = taxTotal.toFixed(2);
+        document.getElementById('totalAmountInput').value = total.toFixed(2);
     }
     
-    // Notikumu klausītāji esošajām rindām
-    document.querySelectorAll('.item-row').forEach(row => {
-        row.querySelector('.quantity-input').addEventListener('input', function() {
-            calculateAmount(row);
-            calculateTotal();
-        });
-        
-        row.querySelector('.unit-price-input').addEventListener('input', function() {
-            calculateAmount(row);
-            calculateTotal();
-        });
-        
-        row.querySelector('.delete-checkbox').addEventListener('change', function() {
-            row.classList.toggle('table-danger', this.checked);
-            calculateTotal();
-        });
-    });
+    // Funkcija dzēšamo rindu vizuālai apstrādei
+    function toggleDeletedRow(checkbox) {
+        const row = checkbox.closest('tr');
+        if (checkbox.checked) {
+            row.classList.add('table-danger');
+        } else {
+            row.classList.remove('table-danger');
+        }
+    }
     
-    // Pievienot jaunu rindu
-    const addItemBtn = document.getElementById('addItemBtn');
-    const newItemsContainer = document.getElementById('newItemsContainer');
-    const newItemCount = document.getElementById('newItemCount');
-    let newItemIndex = 0;
-    
-    addItemBtn.addEventListener('click', function() {
-        const template = `
-            <div class="row mb-3 new-item-row">
-                <div class="col-md-5">
-                    <input type="text" name="new_description_${newItemIndex}" class="form-control description-input" placeholder="Apraksts" required>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" name="new_quantity_${newItemIndex}" value="1" min="0.01" step="0.01" class="form-control quantity-input text-center" required>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" name="new_unit_price_${newItemIndex}" value="0" min="0.01" step="0.01" class="form-control unit-price-input text-center" required>
-                </div>
-                <div class="col-md-2 d-flex align-items-center">
-                    <span class="amount">0.00</span> €
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-btn">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
+    // Funkcija jaunas pozīcijas pievienošanai
+    function addNewItem() {
+        const newItemsContainer = document.getElementById('newItemsContainer');
+        const newItemCountInput = document.getElementById('newItemCount');
+        
+        const tableRow = document.createElement('tr');
+        tableRow.innerHTML = `
+            <td>
+                <input type="text" name="new_description_${newItemIndex}" 
+                       placeholder="Apraksts" class="form-control form-control-sm" required>
+            </td>
+            <td>
+                <input type="number" name="new_quantity_${newItemIndex}" 
+                       value="1" min="0.01" step="0.01" 
+                       class="form-control form-control-sm new-item-quantity"
+                       onchange="updateNewItemAmount(this)"
+                       data-index="${newItemIndex}">
+            </td>
+            <td>
+                <input type="number" name="new_price_${newItemIndex}" 
+                       value="0" min="0.01" step="0.01" 
+                       class="form-control form-control-sm new-item-price"
+                       onchange="updateNewItemAmount(this)"
+                       data-index="${newItemIndex}">
+            </td>
+            <td>
+                <select name="new_tax_${newItemIndex}" 
+                        class="form-select form-select-sm new-item-tax"
+                        onchange="updateNewItemAmount(this)"
+                        data-index="${newItemIndex}">
+                    <option value="">Nav nodokļa</option>
+                    {% for tax in taxes %}
+                    <option value="{{ tax.id }}" data-rate="{{ tax.rate }}">
+                        {{ tax.name }} ({{ tax.rate }}%)
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <span class="new-item-amount">0.00</span> €
+                <input type="hidden" name="new_amount_${newItemIndex}" 
+                      value="0.00" 
+                      class="new-item-amount-input">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn"
+                        onclick="removeNewItem(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
         `;
         
-        // Ievietojam HTML
-        newItemsContainer.insertAdjacentHTML('beforeend', template);
+        // Ja jau ir jaunas pozīcijas, ievieto pirms tabulas
+        if (newItemsContainer.querySelector('table')) {
+            newItemsContainer.querySelector('tbody').appendChild(tableRow);
+        } else {
+            // Ja vēl nav tabulas, izveido jaunu
+            const table = document.createElement('table');
+            table.className = 'table table-hover';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Apraksts</th>
+                        <th style="width: 110px;">Daudzums</th>
+                        <th style="width: 120px;">Cena (€)</th>
+                        <th style="width: 150px;">Nodoklis</th>
+                        <th style="width: 110px;">Summa (€)</th>
+                        <th style="width: 80px;">Dzēst</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            table.querySelector('tbody').appendChild(tableRow);
+            newItemsContainer.appendChild(table);
+        }
         
-        // Iegūstam jauno rindu
-        const newRow = newItemsContainer.lastElementChild;
-        
-        // Pievienojam notikumu klausītājus
-        newRow.querySelector('.quantity-input').addEventListener('input', function() {
-            calculateAmount(newRow);
-            calculateTotal();
-        });
-        
-        newRow.querySelector('.unit-price-input').addEventListener('input', function() {
-            calculateAmount(newRow);
-            calculateTotal();
-        });
-        
-        newRow.querySelector('.remove-btn').addEventListener('click', function() {
-            newRow.remove();
-            calculateTotal();
-            // Atjauninām newItemCount
-            newItemCount.value = document.querySelectorAll('.new-item-row').length;
-        });
-        
-        // Inkrementējam un atjauninām rindas skaitu
+        // Palielinām skaitītāju un saglabājam vērtību
         newItemIndex++;
-        newItemCount.value = newItemIndex;
+        newItemCountInput.value = newItemIndex;
         
-        // Aprēķinam summu jaunajai rindai
-        calculateAmount(newRow);
-        calculateTotal();
-    });
+        // Pārrēķinām kopējo summu
+        updateTotalAmount();
+    }
     
-    // Sākotnējais kopējās summas aprēķins
-    calculateTotal();
-});
+    // Funkcija jaunas pozīcijas summas aprēķinam
+    function updateNewItemAmount(element) {
+        const row = element.closest('tr');
+        const quantityInput = row.querySelector('.new-item-quantity');
+        const priceInput = row.querySelector('.new-item-price');
+        const taxSelect = row.querySelector('.new-item-tax');
+        const amountSpan = row.querySelector('.new-item-amount');
+        const amountInput = row.querySelector('.new-item-amount-input');
+        
+        if (!quantityInput || !priceInput || !amountSpan || !amountInput) return;
+        
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const taxOption = taxSelect.options[taxSelect.selectedIndex];
+        const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+        
+        const subtotal = quantity * price;
+        const taxAmount = subtotal * (taxRate / 100);
+        const total = subtotal + taxAmount;
+        
+        amountSpan.textContent = total.toFixed(2);
+        amountInput.value = total.toFixed(2);
+        
+        // Pārrēķinām kopējo summu
+        updateTotalAmount();
+    }
+    
+    // Funkcija jaunas pozīcijas dzēšanai
+    function removeNewItem(button) {
+        const row = button.closest('tr');
+        const tbody = row.parentNode;
+        const table = tbody.parentNode;
+        
+        // Dzēšam rindu
+        tbody.removeChild(row);
+        
+        // Ja vairs nav rindu, dzēšam tabulu
+        if (tbody.children.length === 0) {
+            table.parentNode.removeChild(table);
+        }
+        
+        // Pārrēķinām kopējo summu
+        updateTotalAmount();
+    }
+    
+    // Inicializācija pēc lapas ielādes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pievienojam notikumu jaunas pozīcijas pogai
+        const addItemBtn = document.getElementById('addItemBtn');
+        if (addItemBtn) {
+            addItemBtn.addEventListener('click', addNewItem);
+        }
+        
+        // Sākotnējais kopējās summas aprēķins
+        updateTotalAmount();
+        
+        // Aprēķinām sākotnējās summas katrai pozīcijai
+        document.querySelectorAll('#itemsTable tr').forEach(row => {
+            const element = row.querySelector('.item-quantity');
+            if (element) {
+                updateItemAmount(element);
+            }
+        });
+        
+        // Pārbaudām vai ir dzēšamās rindas
+        document.querySelectorAll('.delete-checkbox').forEach(checkbox => {
+            if (checkbox.checked) {
+                toggleDeletedRow(checkbox);
+            }
+        });
+    });
 </script>
 {% endblock %}
 {% endblock %}
