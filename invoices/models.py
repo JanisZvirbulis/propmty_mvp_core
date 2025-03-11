@@ -1,8 +1,8 @@
 from django.db import models
-import uuid
 from core.models import TenantModel
 from django.utils import timezone
 from leases.models import Lease
+from decimal import Decimal
 
 class Tax(TenantModel):
     """Nodokļu definīcijas, ko var pielietot rēķinu pozīcijām"""
