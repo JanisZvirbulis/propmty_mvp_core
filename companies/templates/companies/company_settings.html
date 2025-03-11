@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Uzņēmuma iestatījumi - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Uzņēmuma iestatījumi</h1>
+            </div>
+            
+            <!-- Navigācijas cilnes -->
+            <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                        <i class="bi bi-building me-2"></i>Pamatinformācija
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tax-tab" data-bs-toggle="tab" data-bs-target="#tax" type="button" role="tab" aria-controls="tax" aria-selected="false">
+                        <i class="bi bi-percent me-2"></i>Nodokļi
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- Cilņu saturs -->
+            <div class="tab-content" id="settingsTabsContent">
+                <!-- Pamatinformācija -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Uzņēmuma pamatinformācija</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.name.id_for_label }}" class="form-label">Uzņēmuma nosaukums *</label>
+                                            {{ form.name }}
+                                            {% if form.name.errors %}
+                                                <div class="text-danger">{{ form.name.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.address.id_for_label }}" class="form-label">Adrese</label>
+                                            {{ form.address }}
+                                            {% if form.address.errors %}
+                                                <div class="text-danger">{{ form.address.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.registration_number.id_for_label }}" class="form-label">Reģistrācijas numurs</label>
+                                                {{ form.registration_number }}
+                                                {% if form.registration_number.errors %}
+                                                    <div class="text-danger">{{ form.registration_number.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.vat_number.id_for_label }}" class="form-label">PVN numurs</label>
+                                                {{ form.vat_number }}
+                                                {% if form.vat_number.errors %}
+                                                    <div class="text-danger">{{ form.vat_number.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.email.id_for_label }}" class="form-label">E-pasts</label>
+                                                {{ form.email }}
+                                                {% if form.email.errors %}
+                                                    <div class="text-danger">{{ form.email.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.phone.id_for_label }}" class="form-label">Telefons</label>
+                                                {{ form.phone }}
+                                                {% if form.phone.errors %}
+                                                    <div class="text-danger">{{ form.phone.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.logo.id_for_label }}" class="form-label">Uzņēmuma logo</label>
+                                            {% if company.logo %}
+                                                <div class="mb-2">
+                                                    <img src="{{ company.logo.url }}" alt="{{ company.name }} logo" class="img-thumbnail" style="max-height: 100px;">
+                                                </div>
+                                            {% endif %}
+                                            {{ form.logo }}
+                                            {% if form.logo.errors %}
+                                                <div class="text-danger">{{ form.logo.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Ieteicamais izmērs: 500x200 pikseļi. Maksimālais izmērs: 2MB.</div>
+                                        </div>
+                                        
+                                        <div class="d-grid mt-4">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-save me-2"></i>Saglabāt izmaiņas
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Informācija</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Šeit jūs varat atjaunināt uzņēmuma pamatinformāciju, kas tiks izmantota rēķinos un citās sistēmas daļās.</p>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Uzņēmuma logo tiks izmantots rēķinos un drukātajos materiālos.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Abonements</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if company.subscription %}
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-5">Plāns:</dt>
+                                            <dd class="col-sm-7">{{ company.subscription.plan.name }}</dd>
+                                            
+                                            <dt class="col-sm-5">Statuss:</dt>
+                                            <dd class="col-sm-7">
+                                                {% if company.subscription.is_active %}
+                                                    <span class="badge bg-success">Aktīvs</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Neaktīvs</span>
+                                                {% endif %}
+                                            </dd>
+                                            
+                                            <dt class="col-sm-5">Derīgs līdz:</dt>
+                                            <dd class="col-sm-7">{{ company.subscription.valid_until|date:"d.m.Y" }}</dd>
+                                            
+                                            <dt class="col-sm-5">Īpašumi:</dt>
+                                            <dd class="col-sm-7">{{ company.properties.count }} / {{ company.subscription.plan.max_properties }}</dd>
+                                            
+                                            <dt class="col-sm-5">Lietotāji:</dt>
+                                            <dd class="col-sm-7">{{ company.members.count|add:"1" }} / {{ company.subscription.plan.max_users }}</dd>
+                                        </dl>
+                                        
+                                        <div class="mt-3">
+                                            <a href="#" class="btn btn-outline-primary">
+                                                <i class="bi bi-arrow-up-circle me-2"></i>Mainīt plānu
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="bi bi-exclamation-circle fs-1 text-warning"></i>
+                                            <p class="mt-2">Nav aktīva abonementa</p>
+                                            <a href="#" class="btn btn-primary mt-2">
+                                                <i class="bi bi-cart-plus me-2"></i>Iegādāties abonementu
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nodokļi -->
+                <div class="tab-pane fade" id="tax" role="tabpanel" aria-labelledby="tax-tab">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Uzņēmuma nodokļi</h5>
+                            <a href="{% url 'companies_tenant:company_add_tax' company.slug %}" class="btn btn-sm btn-light">
+                                <i class="bi bi-plus-circle me-1"></i>Pievienot nodokli
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if taxes %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Nosaukums</th>
+                                                <th>Kods</th>
+                                                <th>Likme (%)</th>
+                                                <th>Kategorija</th>
+                                                <th>Noklusējuma</th>
+                                                <th>Darbības</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for tax in taxes %}
+                                            <tr>
+                                                <td>{{ tax.name }}</td>
+                                                <td>{{ tax.code }}</td>
+                                                <td>{{ tax.rate }}%</td>
+                                                <td>{{ tax.get_category_display }}</td>
+                                                <td>
+                                                    {% if tax.is_default %}
+                                                        <span class="badge bg-primary">Jā</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Nē</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="{% url 'companies_tenant:company_edit_tax' company.slug tax.id %}" class="btn btn-outline-primary" title="Rediģēt">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <a href="{% url 'companies_tenant:company_delete_tax' company.slug tax.id %}" class="btn btn-outline-danger" title="Dzēst">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-percent fs-1 text-muted"></i>
+                                    <h5 class="mt-3">Nav pievienotu nodokļu</h5>
+                                    <p class="text-muted">Pievienojiet nodokļus, ko vēlaties izmantot rēķinos.</p>
+                                    <a href="{% url 'companies_tenant:company_add_tax' company.slug %}" class="btn btn-primary mt-2">
+                                        <i class="bi bi-plus-circle me-2"></i>Pievienot pirmo nodokli
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Par nodokļiem</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Nodokļi tiek izmantoti rēķinu izveidē, lai aprēķinātu kopējo summu ar nodokļiem. Katram nodokļu veidam var norādīt:</p>
+                            <ul>
+                                <li><strong>Nosaukums</strong> - piemēram, "PVN", "Elektroenerģijas nodoklis"</li>
+                                <li><strong>Kods</strong> - iekšējai vai dokumentu identificēšanai, piemēram, "VAT", "ELEC_TAX"</li>
+                                <li><strong>Likme</strong> - nodokļa procentuālā likme</li>
+                                <li><strong>Kategorija</strong> - nodokļa veids, palīdz grupēt dažādus nodokļus</li>
+                                <li><strong>Noklusējuma</strong> - ja atzīmēts, šis nodoklis tiks automātiski pievienots jaunām rēķina pozīcijām</li>
+                            </ul>
+                            
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Piezīme: Ja dzēsīsiet nodokli, kas jau ir izmantots esošajos rēķinos, rēķinos saglabāsies nodokļa informācija, bet jaunu rēķinu izveidē šis nodoklis vairs nebūs pieejams. Mēs iesakām atjaunināt nodokļa likmi, nevis dzēst nodokli, ja tas jau ir izmantots.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Skripts, lai saglabātu aktīvo cilni pēc lapas pārlādēšanas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Atrodam cilnes
+        var triggerTabList = [].slice.call(document.querySelectorAll('#settingsTabs button'));
+        triggerTabList.forEach(function(triggerEl) {
+            triggerEl.addEventListener('click', function(event) {
+                // Saglabājam aktīvo cilni lokālajā glabātuvē
+                localStorage.setItem('activeSettingsTab', this.getAttribute('id'));
+            });
+        });
+        
+        // Atjaunojam aktīvo cilni no lokālās glabātuves
+        var activeTab = localStorage.getItem('activeSettingsTab');
+        if (activeTab) {
+            var activeTabElement = document.querySelector('#' + activeTab);
+            if (activeTabElement) {
+                var tab = new bootstrap.Tab(activeTabElement);
+                tab.show();
+            }
+        }
+    });
+</script>
+{% endblock %}

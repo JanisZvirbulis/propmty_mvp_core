@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dzēst nodokli - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_settings' company.slug %}">Iestatījumi</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Dzēst nodokli</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-trash me-2"></i>Dzēst nodokli
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-4">
+                                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+                            </div>
+                            
+                            <h4 class="mb-4">Vai tiešām vēlaties dzēst šo nodokli?</h4>
+                            
+                            <div class="card mb-4">
+                                <div class="card-body text-start">
+                                    <h5 class="card-title border-bottom pb-2 mb-3">Nodokļa informācija</h5>
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Nosaukums:</dt>
+                                        <dd class="col-sm-8">{{ tax.name }}</dd>
+                                        
+                                        <dt class="col-sm-4">Kods:</dt>
+                                        <dd class="col-sm-8">{{ tax.code }}</dd>
+                                        
+                                        <dt class="col-sm-4">Likme:</dt>
+                                        <dd class="col-sm-8">{{ tax.rate }}%</dd>
+                                        
+                                        <dt class="col-sm-4">Kategorija:</dt>
+                                        <dd class="col-sm-8">{{ tax.get_category_display }}</dd>
+                                        
+                                        <dt class="col-sm-4">Noklusējuma:</dt>
+                                        <dd class="col-sm-8">{{ tax.is_default|yesno:"Jā,Nē" }}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            {% if used_in_invoices %}
+                            <div class="alert alert-warning mb-4">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Uzmanību!</strong> Šis nodoklis ir izmantots vienā vai vairākos rēķinos. 
+                                Dzēšot šo nodokli, tas vairs nebūs pieejams jaunu rēķinu izveidei, 
+                                bet esošie rēķini saglabās nodokļu informāciju.
+                            </div>
+                            {% endif %}
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                {% if used_in_invoices %}
+                                <input type="hidden" name="confirm_force_delete" value="yes">
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="{% url 'companies_tenant:company_settings' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i> Atcelt
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash me-2"></i> Apstiprināt dzēšanu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

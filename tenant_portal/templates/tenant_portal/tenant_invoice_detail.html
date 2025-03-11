@@ -127,6 +127,9 @@
                                 <dt class="col-sm-6">Apmaksas termiņš:</dt>
                                 <dd class="col-sm-6">{{ invoice.due_date|date:"d.m.Y" }}</dd>
                                 
+                                <dt class="col-sm-6">Periods:</dt>
+                                <dd class="col-sm-6">{{ invoice.period_start|date:"d.m.Y" }} - {{ invoice.period_end|date:"d.m.Y" }}</dd>
+                                
                                 <dt class="col-sm-6">Īpašums:</dt>
                                 <dd class="col-sm-6">{{ invoice.lease.unit.property.address }}</dd>
                                 
@@ -144,7 +147,10 @@
                                     <th>Apraksts</th>
                                     <th class="text-center">Daudzums</th>
                                     <th class="text-end">Cena</th>
-                                    <th class="text-end">Summa</th>
+                                    <th class="text-center">Nodoklis</th>
+                                    <th class="text-end">Summa bez nodokļa</th>
+                                    <th class="text-end">Nodokļa summa</th>
+                                    <th class="text-end">Kopā</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,13 +159,38 @@
                                     <td>{{ item.description }}</td>
                                     <td class="text-center">{{ item.quantity }}</td>
                                     <td class="text-end">{{ item.unit_price }} €</td>
+                                    <td class="text-center">
+                                        {% if item.tax %}
+                                            {{ item.tax.name }} ({{ item.tax.rate }}%)
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% with subtotal=item.amount|default:0|floatformat:2 %}
+                                            {% if item.tax %}
+                                                {{ subtotal }} €
+                                            {% else %}
+                                                {{ item.amount|floatformat:2 }} €
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.tax %}
+                                            {{ item.tax_amount|floatformat:2 }} €
+                                        {% else %}
+                                            0.00 €
+                                        {% endif %}
+                                    </td>
                                     <td class="text-end">{{ item.amount }} €</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="3" class="text-end">Kopā:</th>
+                                    <th colspan="4" class="text-end">Kopā:</th>
+                                    <th class="text-end">{{ invoice.subtotal_amount|floatformat:2 }} €</th>
+                                    <th class="text-end">{{ invoice.tax_amount|floatformat:2 }} €</th>
                                     <th class="text-end">{{ invoice.total_amount }} €</th>
                                 </tr>
                             </tfoot>

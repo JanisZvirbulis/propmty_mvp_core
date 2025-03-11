@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if action == 'add' %}Pievienot nodokli{% else %}Rediģēt nodokli{% endif %} - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_settings' company.slug %}">Iestatījumi</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            {% if action == 'add' %}Pievienot nodokli{% else %}Rediģēt nodokli{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                {% if action == 'add' %}
+                                    <i class="bi bi-plus-circle me-2"></i>Pievienot nodokli
+                                {% else %}
+                                    <i class="bi bi-pencil me-2"></i>Rediģēt nodokli
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label">Nodokļa nosaukums *</label>
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                            <div class="text-danger">{{ form.name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.code.id_for_label }}" class="form-label">Nodokļa kods</label>
+                                        {{ form.code }}
+                                        {% if form.code.errors %}
+                                            <div class="text-danger">{{ form.code.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Piemēram: "VAT", "ELEC_TAX"</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.rate.id_for_label }}" class="form-label">Nodokļa likme (%) *</label>
+                                        {{ form.rate }}
+                                        {% if form.rate.errors %}
+                                            <div class="text-danger">{{ form.rate.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label">Kategorija *</label>
+                                        {{ form.category }}
+                                        {% if form.category.errors %}
+                                            <div class="text-danger">{{ form.category.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Apraksts</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-4 form-check">
+                                    {{ form.is_default }}
+                                    <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                        Iestatīt kā noklusējuma nodokli
+                                    </label>
+                                    {% if form.is_default.errors %}
+                                        <div class="text-danger">{{ form.is_default.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Noklusējuma nodoklis tiks automātiski pievienots jaunām rēķina pozīcijām. Var būt tikai viens noklusējuma nodoklis.</div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'companies_tenant:company_settings' company.slug %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Atgriezties
+                                    </a>
+                                    
+                                    <button type="submit" class="btn btn-primary">
+                                        {% if action == 'add' %}
+                                            <i class="bi bi-plus-circle me-2"></i>Pievienot nodokli
+                                        {% else %}
+                                            <i class="bi bi-save me-2"></i>Saglabāt izmaiņas
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">Nodokļi tiek izmantoti rēķinu pozīcijās, lai aprēķinātu kopējo summu ar nodokļiem. Piemēram, ja preces cena ir 100 €, un nodokļa likme ir 21%, tad rēķina gala summa būs 121 €.</p>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle me-2"></i>Padoms</h6>
+                                <ul class="mb-0">
+                                    <li>Sistēmā var definēt vairākus dažādus nodokļus</li>
+                                    <li>Parasti visbiežāk tiek izmantots PVN ar 21% likmi</li>
+                                    <li>Dažādiem pakalpojumiem var būt atšķirīgas nodokļu likmes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

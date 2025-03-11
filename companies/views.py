@@ -4,11 +4,12 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from .models import Company, CompanyMember, CompanyInvitation
-from .forms import CompanyForm, CompanyInvitationForm, CompanyMemberRoleForm
+from .forms import CompanyForm, CompanyInvitationForm, CompanyMemberRoleForm, CompanySettingsForm, TaxForm
 from core.decorators import tenant_required
 from utils.utils import send_company_invitation_email
 from properties.models import Property
 from users.models import User
+from invoices.models import Tax
 
 
 
@@ -54,6 +55,142 @@ def company_create(request):
     return render(request, 'companies/company_form.html', {
         'form': form,
         'is_creating': True
+    })
+
+@login_required
+@tenant_required
+def company_settings(request, company_slug):
+    company = request.tenant
+    
+    # Pārbaudam vai lietotājam ir tiesības
+    if not (request.user == company.owner or request.user.company_memberships.filter(
+            company=company, role='ADMIN').exists()):
+        messages.error(request, "Jums nav tiesību mainīt uzņēmuma iestatījumus.")
+        return redirect('companies_tenant:company_detail', company_slug=company_slug)
+    
+    # Uzņēmuma iestatījumu apstrāde
+    if request.method == 'POST':
+        form = CompanySettingsForm(request.POST, request.FILES, instance=company)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Uzņēmuma iestatījumi veiksmīgi atjaunināti.")
+            return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    else:
+        form = CompanySettingsForm(instance=company)
+    
+    # Iegūstam uzņēmuma nodokļus
+    taxes = Tax.objects.filter(company=company).order_by('-is_default', 'name')
+    
+    return render(request, 'companies/company_settings.html', {
+        'company': company,
+        'form': form,
+        'taxes': taxes,
+        'active_page': 'settings'
+    })
+
+@login_required
+@tenant_required
+def company_add_tax(request, company_slug):
+    company = request.tenant
+    
+    # Pārbaudam vai lietotājam ir tiesības
+    if not (request.user == company.owner or request.user.company_memberships.filter(
+            company=company, role='ADMIN').exists()):
+        messages.error(request, "Jums nav tiesību pievienot nodokļus.")
+        return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    
+    if request.method == 'POST':
+        form = TaxForm(request.POST)
+        if form.is_valid():
+            tax = form.save(commit=False)
+            tax.company = company
+            
+            # Ja šis ir noklusējuma nodoklis, noņemam to no citiem
+            if tax.is_default:
+                Tax.objects.filter(company=company, is_default=True).update(is_default=False)
+            
+            tax.save()
+            messages.success(request, f"Nodoklis '{tax.name}' veiksmīgi pievienots.")
+            return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    else:
+        form = TaxForm()
+    
+    return render(request, 'companies/tax_form.html', {
+        'company': company,
+        'form': form,
+        'action': 'add',
+        'active_page': 'settings'
+    })
+
+@login_required
+@tenant_required
+def company_edit_tax(request, company_slug, tax_id):
+    company = request.tenant
+    
+    # Pārbaudam vai lietotājam ir tiesības
+    if not (request.user == company.owner or request.user.company_memberships.filter(
+            company=company, role='ADMIN').exists()):
+        messages.error(request, "Jums nav tiesību rediģēt nodokļus.")
+        return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    
+    tax = get_object_or_404(Tax, id=tax_id, company=company)
+    
+    if request.method == 'POST':
+        form = TaxForm(request.POST, instance=tax)
+        if form.is_valid():
+            # Ja šis ir noklusējuma nodoklis, noņemam to no citiem
+            if form.cleaned_data['is_default'] and not tax.is_default:
+                Tax.objects.filter(company=company, is_default=True).update(is_default=False)
+            
+            form.save()
+            messages.success(request, f"Nodoklis '{tax.name}' veiksmīgi atjaunināts.")
+            return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    else:
+        form = TaxForm(instance=tax)
+    
+    return render(request, 'companies/tax_form.html', {
+        'company': company,
+        'form': form,
+        'tax': tax,
+        'action': 'edit',
+        'active_page': 'settings'
+    })
+
+@login_required
+@tenant_required
+def company_delete_tax(request, company_slug, tax_id):
+    company = request.tenant
+    
+    # Pārbaudam vai lietotājam ir tiesības
+    if not (request.user == company.owner or request.user.company_memberships.filter(
+            company=company, role='ADMIN').exists()):
+        messages.error(request, "Jums nav tiesību dzēst nodokļus.")
+        return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    
+    tax = get_object_or_404(Tax, id=tax_id, company=company)
+    
+    # Pārbaudam vai nodoklis ir izmantots rēķinu pozīcijās
+    used_in_invoices = tax.invoice_items.exists()
+    
+    if request.method == 'POST':
+        if used_in_invoices and 'confirm_force_delete' not in request.POST:
+            messages.error(request, "Šis nodoklis ir izmantots rēķinos. Apstiprini dzēšanu vēlreiz, lai turpinātu.")
+            return render(request, 'companies/tax_delete.html', {
+                'company': company,
+                'tax': tax,
+                'used_in_invoices': used_in_invoices,
+                'active_page': 'settings'
+            })
+        
+        tax.delete()
+        messages.success(request, f"Nodoklis '{tax.name}' veiksmīgi dzēsts.")
+        return redirect('companies_tenant:company_settings', company_slug=company_slug)
+    
+    return render(request, 'companies/tax_delete.html', {
+        'company': company,
+        'tax': tax,
+        'used_in_invoices': used_in_invoices,
+        'active_page': 'settings'
     })
 
 
