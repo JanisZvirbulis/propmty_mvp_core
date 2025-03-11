@@ -1,5 +1,6 @@
-{% extends 'base.html' %}
-{% load static %}
+ {% extends 'base.html' %}
+{% comment %}
+ {% load static %}
 
 {% block title %}Izveidot rēķinu - {{ company.name }} - Propmty{% endblock %}
 
@@ -237,6 +238,678 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Sākotnējais summas aprēķins
     calculateTotal();
+});
+</script>
+{% endblock %}
+{% endblock %}
+
+ {% endcomment %}
+
+{% comment %} JAUNAIS NEPABEIGTAIS KODS {% endcomment %}
+
+{% load static %}
+
+{% block title %}Izveidot rēķinu - {{ company.name }} - Propmty{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "partials/sidebar.html" %}
+        
+        <!-- Galvenais saturs -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'companies_tenant:company_detail' company.slug %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'invoices:invoice_list' company.slug %}">Rēķini</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Jauns rēķins</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Izveidot jaunu rēķinu</h1>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Līguma informācija</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Adrese:</dt>
+                                <dd class="col-sm-8">{{ lease.unit.property.address }}</dd>
+                                
+                                <dt class="col-sm-4">Telpa:</dt>
+                                <dd class="col-sm-8">{{ lease.unit.unit_number }}</dd>
+                                
+                                <dt class="col-sm-4">Īrnieks:</dt>
+                                <dd class="col-sm-8">{{ lease.tenant.get_full_name|default:"Nav īrnieka" }}</dd>
+                                
+                                <dt class="col-sm-4">Īres maksa:</dt>
+                                <dd class="col-sm-8">{{ lease.rent_amount }} €/mēnesī</dd>
+                                
+                                <dt class="col-sm-4">Līguma termiņš:</dt>
+                                <dd class="col-sm-8">{{ lease.start_date|date:"d.m.Y" }} - {{ lease.end_date|date:"d.m.Y" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <form method="post" id="invoiceForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="create_invoice" value="1">
+                        
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Rēķina pamatinformācija</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.issue_date.id_for_label }}" class="form-label">Rēķina datums *</label>
+                                        {{ form.issue_date }}
+                                        {% if form.issue_date.errors %}
+                                            <div class="text-danger">{{ form.issue_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.due_date.id_for_label }}" class="form-label">Apmaksas termiņš *</label>
+                                        {{ form.due_date }}
+                                        {% if form.due_date.errors %}
+                                            <div class="text-danger">{{ form.due_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_start.id_for_label }}" class="form-label">Rēķina perioda sākums</label>
+                                        {{ form.period_start }}
+                                        {% if form.period_start.errors %}
+                                            <div class="text-danger">{{ form.period_start.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.period_end.id_for_label }}" class="form-label">Rēķina perioda beigas</label>
+                                        {{ form.period_end }}
+                                        {% if form.period_end.errors %}
+                                            <div class="text-danger">{{ form.period_end.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">Piezīmes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger">{{ form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Rēķina pozīcijas</h5>
+                                <button type="button" class="btn btn-sm btn-light" id="addCustomItem">
+                                    <i class="bi bi-plus-circle"></i> Pievienot pozīciju
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <ul class="nav nav-tabs mb-3" id="itemTypeTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="all-items-tab" data-bs-toggle="tab" data-bs-target="#all-items" type="button" role="tab" aria-controls="all-items" aria-selected="true">
+                                            Visas pozīcijas
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="rent-tab" data-bs-toggle="tab" data-bs-target="#rent-items" type="button" role="tab" aria-controls="rent-items" aria-selected="false">
+                                            Īres maksa
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="utility-tab" data-bs-toggle="tab" data-bs-target="#utility-items" type="button" role="tab" aria-controls="utility-items" aria-selected="false">
+                                            Komunālie
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance-items" type="button" role="tab" aria-controls="maintenance-items" aria-selected="false">
+                                            Remontdarbi
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-items" type="button" role="tab" aria-controls="custom-items" aria-selected="false">
+                                            Papildus
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content" id="itemTypeTabContent">
+                                    <!-- Visas pozīcijas -->
+                                    <div class="tab-pane fade show active" id="all-items" role="tabpanel" aria-labelledby="all-items-tab">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="selectAll" checked>
+                                            <label class="form-check-label fw-bold" for="selectAll">
+                                                Atlasīt visas pozīcijas
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="table-responsive mb-3">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 50px;"></th>
+                                                        <th>Apraksts</th>
+                                                        <th>Tips</th>
+                                                        <th class="text-center">Daudzums</th>
+                                                        <th class="text-end">Cena (€)</th>
+                                                        <th>Nodoklis</th>
+                                                        <th class="text-end">Summa (€)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="allItemsTable">
+                                                    {% for item in items_to_include %}
+                                                    <tr class="item-row" data-type="{{ item.type|default:'standard' }}">
+                                                        <td>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input item-checkbox" type="checkbox" 
+                                                                       name="selected_items" value="{{ forloop.counter0 }}" 
+                                                                       id="item{{ forloop.counter0 }}" checked>
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ item.description }}</td>
+                                                        <td>
+                                                            <select name="item_type_{{ forloop.counter0 }}" class="form-select form-select-sm item-type">
+                                                                <option value="rent" {% if item.type == 'rent' %}selected{% endif %}>Īres maksa</option>
+                                                                <option value="utility" {% if item.type == 'utility' %}selected{% endif %}>Komunālie</option>
+                                                                <option value="maintenance" {% if item.type == 'maintenance' %}selected{% endif %}>Remontdarbi</option>
+                                                                <option value="fee" {% if item.type == 'fee' %}selected{% endif %}>Papildu maksa</option>
+                                                                <option value="discount" {% if item.type == 'discount' %}selected{% endif %}>Atlaide</option>
+                                                                <option value="standard" {% if item.type == 'standard' or not item.type %}selected{% endif %}>Standarta</option>
+                                                            </select>
+                                                        </td>
+                                                        <td class="text-center quantity">{{ item.quantity }}</td>
+                                                        <td class="text-end">{{ item.unit_price }} €</td>
+                                                        <td>
+                                                            <select name="item_tax_{{ forloop.counter0 }}" class="form-select form-select-sm item-tax">
+                                                                <option value="">Nav nodokļa</option>
+                                                                {% for tax in taxes %}
+                                                                <option value="{{ tax.id }}" data-rate="{{ tax.rate }}">{{ tax.name }} ({{ tax.rate }}%)</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </td>
+                                                        <td class="text-end item-total">
+                                                            {{ item.unit_price|floatformat:2|default:"0.00" }} €
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="6" class="text-end">Starpsumma:</th>
+                                                        <th class="text-end subtotal-amount">0.00 €</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <th colspan="6" class="text-end">Nodokļi:</th>
+                                                        <th class="text-end tax-amount">0.00 €</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <th colspan="6" class="text-end">Kopā:</th>
+                                                        <th class="text-end total-amount">0.00 €</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Īres maksa -->
+                                    <div class="tab-pane fade" id="rent-items" role="tabpanel" aria-labelledby="rent-tab">
+                                        <div id="rentItemsContainer">
+                                            <!-- Šeit tiks pievienotas īres maksas pozīcijas ar JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Komunālie -->
+                                    <div class="tab-pane fade" id="utility-items" role="tabpanel" aria-labelledby="utility-tab">
+                                        <div id="utilityItemsContainer">
+                                            <!-- Šeit tiks pievienotas komunālo pakalpojumu pozīcijas ar JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Remontdarbi -->
+                                    <div class="tab-pane fade" id="maintenance-items" role="tabpanel" aria-labelledby="maintenance-tab">
+                                        <div id="maintenanceItemsContainer">
+                                            <!-- Šeit tiks pievienotas remontdarbu pozīcijas ar JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Papildus -->
+                                    <div class="tab-pane fade" id="custom-items" role="tabpanel" aria-labelledby="custom-tab">
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-primary" id="addCustomItemTab">
+                                                <i class="bi bi-plus-circle"></i> Pievienot jaunu pozīciju
+                                            </button>
+                                        </div>
+                                        <div id="customItemsContainer">
+                                            <!-- Šeit tiks pievienotas pielāgotas pozīcijas ar JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i> 
+                                    Atzīmējiet visas pozīcijas, kuras vēlaties iekļaut rēķinā. Īres maksa tiek iekļauta automātiski.
+                                    Komunālo pakalpojumu maksājumi tiek aprēķināti no skaitītāju rādījumiem.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-5">
+                            <a href="{% url 'invoices:invoice_list' company.slug %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Atgriezties uz sarakstu
+                            </a>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Izveidot rēķinu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Attēlot pozīcijas pēc to tipa attiecīgajās cilnēs
+    function populateItemTabs() {
+        // Attīrām visus konteinerus
+        document.getElementById('rentItemsContainer').innerHTML = '';
+        document.getElementById('utilityItemsContainer').innerHTML = '';
+        document.getElementById('maintenanceItemsContainer').innerHTML = '';
+        document.getElementById('customItemsContainer').innerHTML = '';
+        
+        // Iegūstam visas pozīcijas
+        const allItems = document.querySelectorAll('#allItemsTable .item-row');
+        
+        // Grupējam pozīcijas pēc tipa
+        allItems.forEach((row, index) => {
+            const type = row.querySelector('.item-type').value;
+            const description = row.querySelector('td:nth-child(2)').textContent;
+            const quantity = row.querySelector('.quantity').textContent;
+            const unitPrice = row.querySelector('td:nth-child(5)').textContent.replace(' €', '');
+            const tax = row.querySelector('.item-tax').value;
+            const taxRate = row.querySelector('.item-tax option:checked').dataset.rate || '0';
+            const itemHtml = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input item-tab-checkbox" type="checkbox" 
+                                   data-index="${index}" 
+                                   id="item_tab_${index}" 
+                                   ${row.querySelector('.item-checkbox').checked ? 'checked' : ''}>
+                            <label class="form-check-label fw-bold" for="item_tab_${index}">
+                                ${description}
+                            </label>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-2">
+                                    <label class="form-label">Daudzums</label>
+                                    <input type="number" class="form-control form-control-sm item-tab-quantity" 
+                                           value="${quantity}" min="0.01" step="0.01" data-index="${index}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-2">
+                                    <label class="form-label">Cena (€)</label>
+                                    <input type="number" class="
+                                    <label class="form-label">Cena (€)</label>
+                                    <input type="number" class="form-control form-control-sm item-tab-price" 
+                                           value="${unitPrice}" min="0.01" step="0.01" data-index="${index}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-2">
+                                    <label class="form-label">Nodoklis</label>
+                                    <select class="form-select form-select-sm item-tab-tax" data-index="${index}">
+                                        <option value="">Nav nodokļa</option>
+                                        {% for tax in taxes %}
+                                        <option value="{{ tax.id }}" data-rate="{{ tax.rate }}" ${tax == '{{ tax.id }}' ? 'selected' : ''}>
+                                            {{ tax.name }} ({{ tax.rate }}%)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-2">
+                                    <label class="form-label">Summa</label>
+                                    <div class="form-control-plaintext text-end fw-bold">
+                                        ${(quantity * unitPrice).toFixed(2)} €
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // Ievietojam attiecīgajā konteinerā atkarībā no tipa
+            if (type === 'rent') {
+                document.getElementById('rentItemsContainer').innerHTML += itemHtml;
+            } else if (type === 'utility') {
+                document.getElementById('utilityItemsContainer').innerHTML += itemHtml;
+            } else if (type === 'maintenance') {
+                document.getElementById('maintenanceItemsContainer').innerHTML += itemHtml;
+            } else {
+                document.getElementById('customItemsContainer').innerHTML += itemHtml;
+            }
+        });
+        
+        // Pievienojam notikumu klausītājus cilnes čekboksiem
+        document.querySelectorAll('.item-tab-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const index = this.dataset.index;
+                const mainTableCheckbox = document.getElementById(`item${index}`);
+                if (mainTableCheckbox) {
+                    mainTableCheckbox.checked = this.checked;
+                    calculateTotal();
+                }
+            });
+        });
+        
+        // Pievienojam notikumu klausītājus daudzumam un cenai
+        document.querySelectorAll('.item-tab-quantity, .item-tab-price').forEach(input => {
+            input.addEventListener('input', function() {
+                const index = this.dataset.index;
+                const row = document.querySelector(`#allItemsTable tr:nth-child(${parseInt(index) + 1})`);
+                if (row) {
+                    if (this.classList.contains('item-tab-quantity')) {
+                        row.querySelector('.quantity').textContent = this.value;
+                    } else if (this.classList.contains('item-tab-price')) {
+                        const priceCell = row.querySelector('td:nth-child(5)');
+                        priceCell.textContent = this.value + ' €';
+                    }
+                    calculateAmount(row);
+                    calculateTotal();
+                    
+                    // Atjauninām citas cilnes
+                    const itemCards = document.querySelectorAll(`.item-tab-checkbox[data-index="${index}"]`);
+                    itemCards.forEach(card => {
+                        const container = card.closest('.card');
+                        const sumEl = container.querySelector('.form-control-plaintext');
+                        const qtyEl = container.querySelector('.item-tab-quantity');
+                        const priceEl = container.querySelector('.item-tab-price');
+                        if (sumEl && qtyEl && priceEl) {
+                            sumEl.textContent = (parseFloat(qtyEl.value) * parseFloat(priceEl.value)).toFixed(2) + ' €';
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Pievienojam notikumu klausītājus nodokļiem
+        document.querySelectorAll('.item-tab-tax').forEach(select => {
+            select.addEventListener('change', function() {
+                const index = this.dataset.index;
+                const row = document.querySelector(`#allItemsTable tr:nth-child(${parseInt(index) + 1})`);
+                if (row) {
+                    const taxSelect = row.querySelector('.item-tax');
+                    taxSelect.value = this.value;
+                    calculateAmount(row);
+                    calculateTotal();
+                }
+            });
+        });
+    }
+    
+    // Atlasīt visus čekboksus
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    
+    // Funkcija pozīcijas summas aprēķināšanai
+    function calculateAmount(row) {
+        const quantity = parseFloat(row.querySelector('.quantity').textContent) || 0;
+        const unitPriceText = row.querySelector('td:nth-child(5)').textContent;
+        const unitPrice = parseFloat(unitPriceText.replace(' €', '')) || 0;
+        const taxSelect = row.querySelector('.item-tax');
+        const taxOption = taxSelect.options[taxSelect.selectedIndex];
+        const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+        
+        const amount = quantity * unitPrice;
+        const taxAmount = amount * (taxRate / 100);
+        const totalAmount = amount + taxAmount;
+        
+        row.querySelector('.item-total').textContent = totalAmount.toFixed(2) + ' €';
+        return { amount, taxAmount, totalAmount };
+    }
+    
+    // Funkcija kopējās summas aprēķināšanai
+    function calculateTotal() {
+        let subtotal = 0;
+        let taxTotal = 0;
+        let total = 0;
+        
+        itemCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                const row = checkbox.closest('tr');
+                const quantity = parseFloat(row.querySelector('.quantity').textContent) || 0;
+                const unitPriceText = row.querySelector('td:nth-child(5)').textContent;
+                const unitPrice = parseFloat(unitPriceText.replace(' €', '')) || 0;
+                const taxSelect = row.querySelector('.item-tax');
+                const taxOption = taxSelect.options[taxSelect.selectedIndex];
+                const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+                
+                const amount = quantity * unitPrice;
+                const taxAmount = amount * (taxRate / 100);
+                
+                subtotal += amount;
+                taxTotal += taxAmount;
+                total += (amount + taxAmount);
+            }
+        });
+        
+        document.querySelector('.subtotal-amount').textContent = subtotal.toFixed(2) + ' €';
+        document.querySelector('.tax-amount').textContent = taxTotal.toFixed(2) + ' €';
+        document.querySelector('.total-amount').textContent = total.toFixed(2) + ' €';
+    }
+    
+    // Pievienojam notikumu klausītājus
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            calculateTotal();
+            
+            // Atjauninam arī cilnes čekboksus
+            document.querySelectorAll('.item-tab-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+    
+    // Individuālo čekboksu notikumi
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            // Ja kāds no individuālajiem čekboksiem tiek atķeksēts, noņem ķeksi no "Select All"
+            if (!this.checked && selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            } else {
+                // Pārbauda, vai visi ir atzīmēti
+                const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                if (allChecked && selectAllCheckbox) {
+                    selectAllCheckbox.checked = true;
+                }
+            }
+            
+            // Pārrēķina kopējo summu
+            calculateTotal();
+            
+            // Atjauninam arī attiecīgo cilnes čekboksu
+            const index = this.value;
+            document.querySelectorAll(`.item-tab-checkbox[data-index="${index}"]`).forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    });
+    
+    // Tipa izmaiņu apstrāde
+    document.querySelectorAll('.item-type').forEach(select => {
+        select.addEventListener('change', function() {
+            // Pēc tipa maiņas atjauninam cilnes
+            populateItemTabs();
+        });
+    });
+    
+    // Nodokļu izmaiņu apstrāde
+    document.querySelectorAll('.item-tax').forEach(select => {
+        select.addEventListener('change', function() {
+            const row = this.closest('tr');
+            calculateAmount(row);
+            calculateTotal();
+        });
+    });
+    
+    // Jauna pielāgota pozīcija
+    const addCustomItemBtn = document.getElementById('addCustomItem');
+    const addCustomItemTabBtn = document.getElementById('addCustomItemTab');
+    let newItemIndex = itemCheckboxes.length;
+    
+    function addNewCustomItem() {
+        // Pievienojam jaunu rindu galvenajā tabulā
+        const newRow = document.createElement('tr');
+        newRow.className = 'item-row';
+        newRow.dataset.type = 'standard';
+        newRow.innerHTML = `
+            <td>
+                <div class="form-check">
+                    <input class="form-check-input item-checkbox" type="checkbox" 
+                           name="selected_items" value="${newItemIndex}" 
+                           id="item${newItemIndex}" checked>
+                </div>
+            </td>
+            <td>
+                <input type="text" name="new_description_${newItemIndex}" 
+                       class="form-control form-control-sm" placeholder="Apraksts" required>
+            </td>
+            <td>
+                <select name="new_item_type_${newItemIndex}" class="form-select form-select-sm item-type">
+                    <option value="rent">Īres maksa</option>
+                    <option value="utility">Komunālie</option>
+                    <option value="maintenance">Remontdarbi</option>
+                    <option value="fee">Papildu maksa</option>
+                    <option value="discount">Atlaide</option>
+                    <option value="standard" selected>Standarta</option>
+                </select>
+            </td>
+            <td class="text-center">
+                <input type="number" name="new_quantity_${newItemIndex}" 
+                       value="1" min="0.01" step="0.01" 
+                       class="form-control form-control-sm text-center new-quantity" required>
+            </td>
+            <td class="text-end">
+                <input type="number" name="new_unit_price_${newItemIndex}" 
+                       value="0" min="0.01" step="0.01" 
+                       class="form-control form-control-sm text-end new-price" required>
+            </td>
+            <td>
+                <select name="new_item_tax_${newItemIndex}" class="form-select form-select-sm item-tax">
+                    <option value="">Nav nodokļa</option>
+                    {% for tax in taxes %}
+                    <option value="{{ tax.id }}" data-rate="{{ tax.rate }}">{{ tax.name }} ({{ tax.rate }}%)</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td class="text-end item-total">0.00 €</td>
+        `;
+        
+        document.querySelector('#allItemsTable').appendChild(newRow);
+        
+        // Pievienojam notikumu klausītājus
+        const checkbox = newRow.querySelector('.item-checkbox');
+        checkbox.addEventListener('change', function() {
+            if (!this.checked && selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            } else {
+                const allChecked = Array.from(document.querySelectorAll('.item-checkbox')).every(cb => cb.checked);
+                if (allChecked && selectAllCheckbox) {
+                    selectAllCheckbox.checked = true;
+                }
+            }
+            calculateTotal();
+        });
+        
+        // Daudzuma un cenas lauki
+        const quantityInput = newRow.querySelector('.new-quantity');
+        const priceInput = newRow.querySelector('.new-price');
+        
+        function calculateNewItemTotal() {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const taxSelect = newRow.querySelector('.item-tax');
+            const taxOption = taxSelect.options[taxSelect.selectedIndex];
+            const taxRate = taxOption && taxOption.dataset.rate ? parseFloat(taxOption.dataset.rate) : 0;
+            
+            const amount = quantity * price;
+            const taxAmount = amount * (taxRate / 100);
+            const total = amount + taxAmount;
+            
+            newRow.querySelector('.item-total').textContent = total.toFixed(2) + ' €';
+            calculateTotal();
+        }
+        
+        quantityInput.addEventListener('input', calculateNewItemTotal);
+        priceInput.addEventListener('input', calculateNewItemTotal);
+        
+        // Tipa maiņa
+        const typeSelect = newRow.querySelector('.item-type');
+        typeSelect.addEventListener('change', function() {
+            newRow.dataset.type = this.value;
+            populateItemTabs();
+        });
+        
+        // Nodokļa maiņa
+        const taxSelect = newRow.querySelector('.item-tax');
+        taxSelect.addEventListener('change', calculateNewItemTotal);
+        
+        // Pievienojam arī cilnēs
+        newItemIndex++;
+        populateItemTabs();
+        
+        // Pārejam uz "Papildus" cilni
+        document.getElementById('custom-tab').click();
+    }
+    
+    if (addCustomItemBtn) {
+        addCustomItemBtn.addEventListener('click', addNewCustomItem);
+    }
+    
+    if (addCustomItemTabBtn) {
+        addCustomItemTabBtn.addEventListener('click', addNewCustomItem);
+    }
+    
+    // Inicializējam cilnes ar attiecīgām pozīcijām
+    populateItemTabs();
+    
+    // Sākotnējais summas aprēķins
+    calculateTotal();
+    
+    // Cilņu pārslēgšana
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            // Atjauninam cilnes pēc pārslēgšanas
+            populateItemTabs();
+        });
+    });
 });
 </script>
 {% endblock %}
