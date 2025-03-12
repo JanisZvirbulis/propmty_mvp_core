@@ -23,6 +23,7 @@ Propmty platforma nodrošina pilnīgu īpašumu pārvaldības ekosistēmu:
 - **Datu bāze:** PostgreSQL
 - **E-pasta pakalpojumi:** SMTP (Gmail)
 - **Drošība:** Django iebūvētā autentifikācijas sistēma
+- **Failu/Bilžu uzglabāšana:** AWS S3 
 
 ## Projekta struktūra
 
@@ -102,6 +103,7 @@ Platforma ļauj pārvaldīt:
 - Python 3.9+
 - PostgreSQL
 - Git
+- AWS priekš fileupload
 
 ### Instalācijas soļi
 
@@ -131,6 +133,12 @@ Platforma ļauj pārvaldīt:
    DB_HOST=localhost
    EMAIL_HOST_USER=your_email@gmail.com
    EMAIL_HOST_PASSWORD=your_email_app_password
+   AWS_ACCESS_KEY_ID=your_aws_access_key_id
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+   AWS_STORAGE_BUCKET_NAME=your_storage_bucket_name
+   AWS_S3_CUSTOM_DOMAIN=your_bucket_name.s3.eu-north-1.amazonaws.com
+   AWS_S3_SIGNATURE_VERSION=s3v4
+   AWS_S3_REGION_NAME=you_aws_s3_region_name
    ```
 
 5. Veiciet migrācijas:
