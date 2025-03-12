@@ -190,7 +190,7 @@ Platforma ļauj pārvaldīt:
 
 ## Licence
 
-Šis projekts ir licencēts ar [jūsu izvēlētā licence] - skatīt LICENSE failu detalizētākai informācijai.
+Šis projekts ir licencēts ar [Apache] - skatīt LICENSE failu detalizētākai informācijai.
 
 ## Autori
 
