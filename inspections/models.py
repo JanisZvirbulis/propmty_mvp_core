@@ -1,5 +1,12 @@
 from django.db import models
 from core.models import TenantModel
+from core.storage import IssueImageStorage
+
+
+def get_report_Issue_image_upload_path(instance, filename):
+    company_id = instance.company_id  # Izmantojam _id, lai piekļūtu tieši foreign key vērtībai
+    issue_id = instance.issue_id
+    return f'company/{company_id}/issueimages/{issue_id}/{filename}'
 
 class Inspection(TenantModel):
     unit = models.ForeignKey('properties.Unit', on_delete=models.CASCADE, related_name='inspections')
@@ -69,7 +76,7 @@ class Issue(TenantModel):
     show_estimated_cost = models.BooleanField(default=True)
 
 class IssueImage(TenantModel):
-    image = models.ImageField(upload_to='issue_images/')
+    image = models.ImageField(upload_to=get_report_Issue_image_upload_path, storage=IssueImageStorage(), max_length=255)
     issue = models.ForeignKey(
         Issue,
         on_delete=models.CASCADE,

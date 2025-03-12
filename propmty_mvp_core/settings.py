@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
     'core',
     'users',
     'companies',
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -140,14 +142,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-   BASE_DIR / "static"
-]
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
+# STATIC_URL = '/static/'
+# STATICFILES_DIRS = [
+#    BASE_DIR / "static"
+# ]
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
+# MEDIA_URL = '/media/'
 # MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -166,3 +167,35 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # The 16-character app p
 # Optional settings
 DEFAULT_FROM_EMAIL = f'Propmty <{os.getenv("EMAIL_HOST_USER")}>'
 SERVER_EMAIL = os.getenv("EMAIL_HOST_USER")  # For error notifications
+
+# AWS S3 konfigurācija
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME') 
+AWS_S3_SIGNATURE_VERSION = os.getenv('AWS_S3_SIGNATURE_VERSION')
+# AWS_S3_FILE_OVERWRITE = False # so paslaik nevajag, tas tiek norādīts storage klasē
+# AWS_DEFAULT_ACL = None # so paslaik nevajag, tas tiek norādīts storage klasē
+AWS_S3_VERIFY = True
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_QUERYSTRING_AUTH = False
+
+# Atļaujam CORS (Cross-Origin Resource Sharing) S3 bucket iestatījumos
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+
+# Media fails konfigurācija - izmantojam AWS S3
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+MEDIA_ROOT = ''  # Šis nav nepieciešams, kad izmantojam S3
+
+
+# Static files konfigurācija - izmantojam WhiteNoise
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise konfigurācija
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# WHITENOISE_MAX_AGE = 31536000  # 1 gads sekundēs

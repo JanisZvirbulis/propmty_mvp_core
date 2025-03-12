@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from core.storage import ProfileImageStorage
 import uuid
 
 class User(AbstractUser):
@@ -14,7 +15,7 @@ class User(AbstractUser):
     personal_code = models.CharField(max_length=50, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True,)
+    profile_image = models.ImageField(upload_to='', blank=True, null=True, storage=ProfileImageStorage())
 
     # Pievienojam related_name
     groups = models.ManyToManyField(

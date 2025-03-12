@@ -3,7 +3,11 @@ from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
 from django.utils import timezone
+from core.storage import CompanyStorage
 import uuid
+
+def get_company_logo_upload_path(instance, filename):
+    return f'company/{instance.id}/logo/{filename}'
 
 
 class Company(models.Model):
@@ -20,7 +24,7 @@ class Company(models.Model):
     vat_number = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
-    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    logo = models.ImageField(upload_to=get_company_logo_upload_path, blank=True, null=True, storage=CompanyStorage())
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
